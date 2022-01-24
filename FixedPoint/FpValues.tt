@@ -1,0 +1,101 @@
+<#@ template language="C#" #>
+<#@ assembly name="netstandard"#>
+<#@ assembly name="..\..\..\Library\ScriptAssemblies\Unity.Mathematics.FixedPoint.dll"#>
+<#@ import namespace="Unity.Mathematics.FixedPoint" #>
+<#@ import namespace="System.Collections.Generic"#>
+<#@ import namespace="System"#>
+<#@ import namespace="System.Text"#>
+<#@ import namespace="System.Globalization"#>
+//t4template 生成代码，切勿直接编辑！！！
+
+namespace Unity.Mathematics.FixedPoint
+{
+    public partial struct Fp
+    {
+<#
+    foreach (var pair in predefinedFpLong)
+    {
+#>
+        /// <#= pair.Value.Item2 #>
+        public const long <#= pair.Key #> = <#
+        Write($"0x{((Fp)pair.Value.Item1).value:X}");
+#>;
+<#
+    }
+#>
+<#
+    foreach (var pair in predefinedFpLong)
+    {
+#>
+        /// <#= pair.Value.Item2 #>
+        public static Fp <#
+        Write(ToStaticName(pair.Key));
+#> { get => new Fp(<#= pair.Key #>);}
+<#
+    }
+#>
+    }
+}
+<#+
+    public static Dictionary<string, Tuple<double, string>> predefinedFpLong = new Dictionary
+        <string, Tuple<double, string>>
+    {
+        { "PI_OVER_3", new Tuple<double, string>(Math.PI / 3, "Math.PI / 3") },
+        { "PI_OVER_4", new Tuple<double, string>(Math.PI / 4, "Math.PI / 4") },
+        { "E", new Tuple<double, string>(Math.E, "Math.E") },
+        { "ONE_OVER_3", new Tuple<double, string>((double)1 / 3, "1/3") },
+        { "ONE_OVER_4", new Tuple<double, string>(0.25, "0.25") },
+        { "ONE_OVER_5", new Tuple<double, string>(0.2, "0.2") },
+        { "ONE_OVER_6", new Tuple<double, string>((double)1 / 6, "1/6") },
+        { "ONE_OVER_12", new Tuple<double, string>((double)1 / 12, "1/12") },
+        { "ONE_OVER_24", new Tuple<double, string>((double)1 / 24, "1/24") },
+        { "ONE_OVER_720", new Tuple<double, string>((double)1 / 720, "1/720") },
+        { "ONE_E_MINUS_7", new Tuple<double, string>(1e-7, "1e-7") },
+        { "ONE_E_MINUS_6", new Tuple<double, string>(1e-6, "1e-6") },
+        { "ONE_E_MINUS_5", new Tuple<double, string>(1e-5, "1e-5") },
+        { "ONE_E_MINUS_4", new Tuple<double, string>(1e-4, "1e-4") },
+        { "ONE_E_MINUS_3", new Tuple<double, string>(1e-3, "1e-3") },
+        { "ONE_E_MINUS_2", new Tuple<double, string>(1e-2, "1e-2") },
+        { "FIVE_E_MINUS_3", new Tuple<double, string>(5e-3, "5e-3") },
+        { "POINT_1", new Tuple<double, string>(0.1, "0.1") },
+        { "POINT_2", new Tuple<double, string>(0.2, "0.2") },
+        { "POINT_3", new Tuple<double, string>(0.3, "0.3") },
+        { "POINT_4", new Tuple<double, string>(0.4, "0.4") },
+        { "POINT_5", new Tuple<double, string>(0.5, "0.5") },
+        { "POINT_01", new Tuple<double, string>(0.01, "0.01") },
+        { "POINT_02", new Tuple<double, string>(0.02, "0.02") },
+        { "POINT_03", new Tuple<double, string>(0.03, "0.03") },
+        { "POINT_04", new Tuple<double, string>(0.04, "0.04") },
+        { "POINT_05", new Tuple<double, string>(0.05, "0.05") },
+        { "POINT_001", new Tuple<double, string>(0.001, "0.001") },
+        { "POINT_002", new Tuple<double, string>(0.002, "0.002") },
+        { "POINT_003", new Tuple<double, string>(0.003, "0.003") },
+        { "POINT_004", new Tuple<double, string>(0.004, "0.004") },
+        { "POINT_005", new Tuple<double, string>(0.005, "0.005") },
+        { "POINT_0001", new Tuple<double, string>(0.0001, "0.0001") },
+        { "POINT_0002", new Tuple<double, string>(0.0002, "0.0002") },
+        { "POINT_0003", new Tuple<double, string>(0.0003, "0.0003") },
+        { "POINT_0004", new Tuple<double, string>(0.0004, "0.0004") },
+        { "POINT_0005", new Tuple<double, string>(0.0005, "0.0005") },
+        { "POINT_9999", new Tuple<double, string>(0.9999, "0.9999") },
+        { "POINT_9995", new Tuple<double, string>(0.9995, "0.9995") },
+        { "POINT_99999", new Tuple<double, string>(0.99999, "0.99999") },
+    };
+
+    public string ToStaticName(string longName)
+    {
+        var splitResult = longName.Split('_');
+        StringBuilder stringBuilder = new StringBuilder();
+        TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+        for (int i = 0; i < splitResult.Length; ++i)
+        {
+            stringBuilder.Append(textInfo.ToTitleCase(textInfo.ToLower(splitResult[i])));
+        }
+        var result = stringBuilder.ToString();
+        if (result == longName)
+        {
+            return $"{result}Fp";
+        }
+        return result;
+    }
+#>

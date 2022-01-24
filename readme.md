@@ -1,59 +1,57 @@
-# Unity.Mathematics.FixedPoint
+# Unity FixedPoint Mathematics
 
-A Fixed-point extension of Unity's C# math library based on [FixedMath.Net](https://github.com/asik/FixedMath.Net) and [Unity.Mathematics](https://github.com/Unity-Technologies/Unity.Mathematics). One of the main reasons for using this library instead of the built-in one is support for cross-platform determinism, until Unity officially supports it with Burst/DOTS. 
+## 前言
 
-The intention is to keep the API as close as possible to Unity.Mathematics. This should make it easy to convert your project to use floating point math if needed.
+这是一个基于 [Unity.Mathematics](https://github.com/Unity-Technologies/Unity.Mathematics) 和 [FixedMath.Net](https://github.com/asik/FixedMath.Net) 的 unity 定点数数学库，用于解决不同平台浮点运算不一致的问题，满足确定性计算需要。直到 unity 的 burst/DOTS 支持确定性计算。
 
-## Usage
+API尽量保持与Unity.Mathematics一致，方便在两边库做切换。
 
-You can use this library in your Unity game by adding this repository to the package manifest file in your Unity project. `PROJECT_ROOT/Packages/manifest.json`:
+代码生成的工程 : /Plugins/Unity.Mathematics.FixedPoint.CodeGen/FixedPoint.CodeGen.csproj
 
+## 使用
+
+通过在 `PROJECT_ROOT/Packages/manifest.json` 中添加以下内容，将包导入到你的 unity 工程中：
 ```json
 {
-  "dependencies": {
-    "com.danielmansson.mathematics.fixedpoint": "https://github.com/danielmansson/Unity.Mathematics.FixedPoint.git"
-  }
+    "dependencies": {
+        "com.91act.noah.fixed.point.math": "https://github.com/91Act/Unity.Mathematics.FixedPoint.git"
+    }
 }
 ```
 
-## Testing and developing
+## 测试和开发
 
-The easiest way to iterate on this package is to clone this repository and [the test project](https://github.com/danielmansson/Unity.Mathematics.FixedPoint.TestProject) side-by-side and open the test project in Unity. This resolves the required dependencies (Unity.Mathematics) and makes the test runner available.
+把这个仓库和[测试仓库](https://github.com/91Act/Unity.Mathematics.FixedPoint.Tests)一起拷贝到某个 Unity Project 的 Assets 文件夹下。
 
-## Example project
+## 缺失功能
 
-A simple example project can be found [here](https://github.com/danielmansson/Unity.Mathematics.FixedPoint.Example). It contains two side-by-side simulations, one using a floating point implementation and the other using fixed point.
+以下功能是缺失的：
 
-## Missing features
+- MathFp.tanh
+- MathFp.cosh
+- MathFp.sinh
+- MathFp.log10
 
-Unity.Mathematics.FixedPoint is not feature complete yet. This is missing:
+虽然有这些函数的API，但内容被标记为过时的。
 
-- quaternion
-- fpmath.tanh
-- fpmath.cosh
-- fpmath.sinh
-- fpmath.exp
-- fpmath.log10
+## 相对 Unity.Mathematics 的修改
 
-Method stubs are added to match the API, but they are marked as obsolete with a compile error.
 
-## Maintaining changes from Unity.Mathematics
+Unity.Mathematics 使用代码生成来创建它的 vector 和 matrix 结构，本仓库大部分修改内容集中在`VectorGenerator.cs`、`MathFp.cs`。
 
-Unity.Mathematics is using code generation to create their vector and matrix types. Most of the changes in this repository from Unity.Mathematics has been in `VectorGenerator.cs` and `fpmath.cs`.
+原本打算尽可能保持与 Unity.Mathematics 一致，但是 `VectorGenerator.cs` 的代码本身拓展性不强，所以如果之后 Unity.Mathematics 有新版本，还是需要手动合并这些修改。 
 
-The plan is to keep this repository almost up to date with Unity.Mathematics, so changes has been isolated as much as possible. However, `VectorGenerator.cs` was not made with external extensibility in mind. When there are internal changes to Unity.Mathematics in upcoming versions, this will require manual patching.
 
-`fpmath.cs` contains the common fixed point math operations. The implementations are based on the floating point methods in Unity.Mathematics `math.cs`.
+`MathFp.cs` 包含常用的定点数计算操作，它的实现是基于 Unity.Mathematics 的浮点版本的 `math.cs`。
 
-## Precision
+## 精度
 
-More tests are needed to verify the precision of all fixed point operations. There might be intermediate calculations unsuitable for fixed point in the current implementation.
+需要增加更多的测试来覆盖当前定点数计算过程的精度。目前，有些计算过程的实现可能是不适合定点数的。
 
-## Licensing
+## 开源许可
 
-This project is licensed under the MIT License ([LICENSE.md](LICENSE.md))
+当前仓库基于 MIT License ([LICENSE.md](LICENSE.md))
 
 Unity.Mathematics ([Unity Companion License](https://github.com/Unity-Technologies/Unity.Mathematics/blob/master/LICENSE.md))
 
-FixedMath.Net ([Apache License, Version 2.0](Unity.Mathematics.FixedPoint/fp/LICENSE.txt))
-
+FixedMath.Net ([Apache License, Version 2.0](LICENSE_Fp.txt))

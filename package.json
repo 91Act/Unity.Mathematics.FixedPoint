@@ -1,19 +1,11 @@
 {
-  "name": "com.danielmansson.mathematics.fixedpoint",
-  "displayName": "Mathematics.FixedPoint",
-  "version": "0.1.0",
-  "unity": "2019.3",
-  "description": "Fixed-point extension of Unity's C# math library based on FixedMath.Net and Unity.Mathematics.",
-  "keywords": [
-    "fixedpoint",
-    "math"
-  ],
-  "dependencies": {
-    "com.unity.mathematics": "1.1.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/danielmansson/Unity.Mathematics.FixedPoint",
-    "revision": ""
-  }
+    "description": "Fixed-point extension of Unity's C# math library providing vector types and math functions with a shader like syntax. should support SIMD.",
+    "displayName": "FixedPointMath",
+    "keywords": [
+        "fixedpoint",
+        "math",
+        "unity"
+    ],
+    "name": "com.91act.noah.fixed.point.math",
+    "version": "1.3.18"
 }

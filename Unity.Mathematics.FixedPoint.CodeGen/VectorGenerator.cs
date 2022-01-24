@@ -1,5 +1,7 @@
 using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -8,85 +10,122 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 {
     class VectorGenerator
     {
-        private string m_ImplementationDirectory;
-        private string m_TestDirectory;
-        private string m_BaseType;
-        private string m_TypeName;
-        private int m_Rows;
-        private int m_Columns;
-        private Features m_Features;
-        private uint[] m_primes = new uint[] {  0x6E624EB7u,    0x7383ED49u,    0xDD49C23Bu,    0xEBD0D005u,            0x91475DF7u,    0x55E84827u,    0x90A285BBu,    0x5D19E1D5u,
-                                                0xFAAF07DDu,    0x625C45BDu,    0xC9F27FCBu,    0x6D2523B1u,            0x6E2BF6A9u,    0xCC74B3B7u,    0x83B58237u,    0x833E3E29u,
-                                                0xA9D919BFu,    0xC3EC1D97u,    0xB8B208C7u,    0x5D3ED947u,            0x4473BBB1u,    0xCBA11D5Fu,    0x685835CFu,    0xC3D32AE1u,
-                                                0xB966942Fu,    0xFE9856B3u,    0xFA3A3285u,    0xAD55999Du,            0xDCDD5341u,    0x94DDD769u,    0xA1E92D39u,    0x4583C801u,
-                                                0x9536A0F5u,    0xAF816615u,    0x9AF8D62Du,    0xE3600729u,            0x5F17300Du,    0x670D6809u,    0x7AF32C49u,    0xAE131389u,
-                                                0x5D1B165Bu,    0x87096CD7u,    0x4C7F6DD1u,    0x4822A3E9u,            0xAAC3C25Du,    0xD21D0945u,    0x88FCAB2Du,    0x614DA60Du,
-                                                0x5BA2C50Bu,    0x8C455ACBu,    0xCD266C89u,    0xF1852A33u,            0x77E35E77u,    0x863E3729u,    0xE191B035u,    0x68586FAFu,
-                                                0xD4DFF6D3u,    0xCB634F4Du,    0x9B13B92Du,    0x4ABF0813u,            0x86068063u,    0xD75513F9u,    0x5AB3E8CDu,    0x676E8407u,
-                                                0xB36DE767u,    0x6FCA387Du,    0xAF0F3103u,    0xE4A056C7u,            0x841D8225u,    0xC9393C7Du,    0xD42EAFA3u,    0xD9AFD06Du,
-                                                0x97A65421u,    0x7809205Fu,    0x9C9F0823u,    0x5A9CA13Bu,            0xAFCDD5EFu,    0xA88D187Du,    0xCF6EBA1Du,    0x9D88E5A1u,
-                                                0xEADF0775u,    0x747A9D7Bu,    0x4111F799u,    0xB5F05AF1u,            0xFD80290Bu,    0x8B65ADB7u,    0xDFF4F563u,    0x7069770Du,
-                                                0xD1224537u,    0xE99ED6F3u,    0x48125549u,    0xEEE2123Bu,            0xE3AD9FE5u,    0xCE1CF8BFu,    0x7BE39F3Bu,    0xFAB9913Fu,
-                                                0xB4501269u,    0xE04B89FDu,    0xDB3DE101u,    0x7B6D1B4Bu,            0x58399E77u,    0x5EAC29C9u,    0xFC6014F9u,    0x6BF6693Fu,
-                                                0x9D1B1D9Bu,    0xF842F5C1u,    0xA47EC335u,    0xA477DF57u,            0xC4B1493Fu,    0xBA0966D3u,    0xAFBEE253u,    0x5B419C01u,
-                                                0x515D90F5u,    0xEC9F68F3u,    0xF9EA92D5u,    0xC2FAFCB9u,            0x616E9CA1u,    0xC5C5394Bu,    0xCAE78587u,    0x7A1541C9u,
-                                                0xF83BD927u,    0x6A243BCBu,    0x509B84C9u,    0x91D13847u,            0x52F7230Fu,    0xCF286E83u,    0xE121E6ADu,    0xC9CA1249u,
-                                                0x69B60C81u,    0xE0EB6C25u,    0xF648BEABu,    0x6BDB2B07u,            0xEF63C699u,    0x9001903Fu,    0xA895B9CDu,    0x9D23B201u,
-                                                0x4B01D3E1u,    0x7461CA0Du,    0x79725379u,    0xD6258E5Bu,            0xEE390C97u,    0x9C8A2F05u,    0x4DDC6509u,    0x7CF083CBu,
-                                                0x5C4D6CEDu,    0xF9137117u,    0xE857DCE1u,    0xF62213C5u,            0x9CDAA959u,    0xAA269ABFu,    0xD54BA36Fu,    0xFD0847B9u,
-                                                0x8189A683u,    0xB139D651u,    0xE7579997u,    0xEF7D56C7u,            0x66F38F0Bu,    0x624256A3u,    0x5292ADE1u,    0xD2E590E5u,
-                                                0xF25BE857u,    0x9BC17CE7u,    0xC8B86851u,    0x64095221u,            0xADF428FFu,    0xA3977109u,    0x745ED837u,    0x9CDC88F5u,
-                                                0xFA62D721u,    0x7E4DB1CFu,    0x68EEE0F5u,    0xBC3B0A59u,            0x816EFB5Du,    0xA24E82B7u,    0x45A22087u,    0xFC104C3Bu,
-                                                0x5FFF6B19u,    0x5E6CBF3Bu,    0xB546F2A5u,    0xBBCF63E7u,            0xC53F4755u,    0x6985C229u,    0xE133B0B3u,    0xC3E0A3B9u,
-                                                0xFE31134Fu,    0x712A34D7u,    0x9D77A59Bu,    0x4942CA39u,            0xB40EC62Du,    0x565ED63Fu,    0x93C30C2Bu,    0xDCAF0351u,
-                                                0x6E050B01u,    0x750FDBF5u,    0x7F3DD499u,    0x52EAAEBBu,            0x4599C793u,    0x83B5E729u,    0xC267163Fu,    0x67BC9149u,
-                                                0xAD7C5EC1u,    0x822A7D6Du,    0xB492BF15u,    0xD37220E3u,            0x7AA2C2BDu,    0xE16BC89Du,    0x7AA07CD3u,    0xAF642BA9u,
-                                                0xA8F2213Bu,    0x9F3FDC37u,    0xAC60D0C3u,    0x9263662Fu,            0xE69626FFu,    0xBD010EEBu,    0x9CEDE1D1u,    0x43BE0B51u,
-                                                0xAF836EE1u,    0xB130C137u,    0x54834775u,    0x7C022221u,            0xA2D00EDFu,    0xA8977779u,    0x9F1C739Bu,    0x4B1BD187u,
-                                                0x9DF50593u,    0xF18EEB85u,    0x9E19BFC3u,    0x8196B06Fu,            0xD24EFA19u,    0x7D8048BBu,    0x713BD06Fu,    0x753AD6ADu,
-                                                0xD19764C7u,    0xB5D0BF63u,    0xF9102C5Fu,    0x9881FB9Fu,            0x56A1530Du,    0x804B722Du,    0x738E50E5u,    0x4FC93C25u,
-                                                0xCD0445A5u,    0xD2B90D9Bu,    0xD35C9B2Du,    0xA10D9E27u,            0x568DAAA9u,    0x7530254Fu,    0x9F090439u,    0x5E9F85C9u,
-                                                0x8C4CA03Fu,    0xB8D969EDu,    0xAC5DB57Bu,    0xA91A02EDu,            0xB3C49313u,    0xF43A9ABBu,    0x84E7E01Bu,    0x8E055BE5u
+        private string _mImplementationDirectory;
+        private string _mTestDirectory;
+        private string _mBaseType;
+        private string _mTypeName;
+        private int _mRows;
+        private int _mColumns;
+        private Features _mFeatures;
+
+        private uint[] m_primes =
+        {
+            0x6E624EB7u, 0x7383ED49u, 0xDD49C23Bu, 0xEBD0D005u, 0x91475DF7u, 0x55E84827u, 0x90A285BBu, 0x5D19E1D5u,
+            0xFAAF07DDu, 0x625C45BDu, 0xC9F27FCBu, 0x6D2523B1u, 0x6E2BF6A9u, 0xCC74B3B7u, 0x83B58237u, 0x833E3E29u,
+            0xA9D919BFu, 0xC3EC1D97u, 0xB8B208C7u, 0x5D3ED947u, 0x4473BBB1u, 0xCBA11D5Fu, 0x685835CFu, 0xC3D32AE1u,
+            0xB966942Fu, 0xFE9856B3u, 0xFA3A3285u, 0xAD55999Du, 0xDCDD5341u, 0x94DDD769u, 0xA1E92D39u, 0x4583C801u,
+            0x9536A0F5u, 0xAF816615u, 0x9AF8D62Du, 0xE3600729u, 0x5F17300Du, 0x670D6809u, 0x7AF32C49u, 0xAE131389u,
+            0x5D1B165Bu, 0x87096CD7u, 0x4C7F6DD1u, 0x4822A3E9u, 0xAAC3C25Du, 0xD21D0945u, 0x88FCAB2Du, 0x614DA60Du,
+            0x5BA2C50Bu, 0x8C455ACBu, 0xCD266C89u, 0xF1852A33u, 0x77E35E77u, 0x863E3729u, 0xE191B035u, 0x68586FAFu,
+            0xD4DFF6D3u, 0xCB634F4Du, 0x9B13B92Du, 0x4ABF0813u, 0x86068063u, 0xD75513F9u, 0x5AB3E8CDu, 0x676E8407u,
+            0xB36DE767u, 0x6FCA387Du, 0xAF0F3103u, 0xE4A056C7u, 0x841D8225u, 0xC9393C7Du, 0xD42EAFA3u, 0xD9AFD06Du,
+            0x97A65421u, 0x7809205Fu, 0x9C9F0823u, 0x5A9CA13Bu, 0xAFCDD5EFu, 0xA88D187Du, 0xCF6EBA1Du, 0x9D88E5A1u,
+            0xEADF0775u, 0x747A9D7Bu, 0x4111F799u, 0xB5F05AF1u, 0xFD80290Bu, 0x8B65ADB7u, 0xDFF4F563u, 0x7069770Du,
+            0xD1224537u, 0xE99ED6F3u, 0x48125549u, 0xEEE2123Bu, 0xE3AD9FE5u, 0xCE1CF8BFu, 0x7BE39F3Bu, 0xFAB9913Fu,
+            0xB4501269u, 0xE04B89FDu, 0xDB3DE101u, 0x7B6D1B4Bu, 0x58399E77u, 0x5EAC29C9u, 0xFC6014F9u, 0x6BF6693Fu,
+            0x9D1B1D9Bu, 0xF842F5C1u, 0xA47EC335u, 0xA477DF57u, 0xC4B1493Fu, 0xBA0966D3u, 0xAFBEE253u, 0x5B419C01u,
+            0x515D90F5u, 0xEC9F68F3u, 0xF9EA92D5u, 0xC2FAFCB9u, 0x616E9CA1u, 0xC5C5394Bu, 0xCAE78587u, 0x7A1541C9u,
+            0xF83BD927u, 0x6A243BCBu, 0x509B84C9u, 0x91D13847u, 0x52F7230Fu, 0xCF286E83u, 0xE121E6ADu, 0xC9CA1249u,
+            0x69B60C81u, 0xE0EB6C25u, 0xF648BEABu, 0x6BDB2B07u, 0xEF63C699u, 0x9001903Fu, 0xA895B9CDu, 0x9D23B201u,
+            0x4B01D3E1u, 0x7461CA0Du, 0x79725379u, 0xD6258E5Bu, 0xEE390C97u, 0x9C8A2F05u, 0x4DDC6509u, 0x7CF083CBu,
+            0x5C4D6CEDu, 0xF9137117u, 0xE857DCE1u, 0xF62213C5u, 0x9CDAA959u, 0xAA269ABFu, 0xD54BA36Fu, 0xFD0847B9u,
+            0x8189A683u, 0xB139D651u, 0xE7579997u, 0xEF7D56C7u, 0x66F38F0Bu, 0x624256A3u, 0x5292ADE1u, 0xD2E590E5u,
+            0xF25BE857u, 0x9BC17CE7u, 0xC8B86851u, 0x64095221u, 0xADF428FFu, 0xA3977109u, 0x745ED837u, 0x9CDC88F5u,
+            0xFA62D721u, 0x7E4DB1CFu, 0x68EEE0F5u, 0xBC3B0A59u, 0x816EFB5Du, 0xA24E82B7u, 0x45A22087u, 0xFC104C3Bu,
+            0x5FFF6B19u, 0x5E6CBF3Bu, 0xB546F2A5u, 0xBBCF63E7u, 0xC53F4755u, 0x6985C229u, 0xE133B0B3u, 0xC3E0A3B9u,
+            0xFE31134Fu, 0x712A34D7u, 0x9D77A59Bu, 0x4942CA39u, 0xB40EC62Du, 0x565ED63Fu, 0x93C30C2Bu, 0xDCAF0351u,
+            0x6E050B01u, 0x750FDBF5u, 0x7F3DD499u, 0x52EAAEBBu, 0x4599C793u, 0x83B5E729u, 0xC267163Fu, 0x67BC9149u,
+            0xAD7C5EC1u, 0x822A7D6Du, 0xB492BF15u, 0xD37220E3u, 0x7AA2C2BDu, 0xE16BC89Du, 0x7AA07CD3u, 0xAF642BA9u,
+            0xA8F2213Bu, 0x9F3FDC37u, 0xAC60D0C3u, 0x9263662Fu, 0xE69626FFu, 0xBD010EEBu, 0x9CEDE1D1u, 0x43BE0B51u,
+            0xAF836EE1u, 0xB130C137u, 0x54834775u, 0x7C022221u, 0xA2D00EDFu, 0xA8977779u, 0x9F1C739Bu, 0x4B1BD187u,
+            0x9DF50593u, 0xF18EEB85u, 0x9E19BFC3u, 0x8196B06Fu, 0xD24EFA19u, 0x7D8048BBu, 0x713BD06Fu, 0x753AD6ADu,
+            0xD19764C7u, 0xB5D0BF63u, 0xF9102C5Fu, 0x9881FB9Fu, 0x56A1530Du, 0x804B722Du, 0x738E50E5u, 0x4FC93C25u,
+            0xCD0445A5u, 0xD2B90D9Bu, 0xD35C9B2Du, 0xA10D9E27u, 0x568DAAA9u, 0x7530254Fu, 0x9F090439u, 0x5E9F85C9u,
+            0x8C4CA03Fu, 0xB8D969EDu, 0xAC5DB57Bu, 0xA91A02EDu, 0xB3C49313u, 0xF43A9ABBu, 0x84E7E01Bu, 0x8E055BE5u
         };
 
-        private uint m_NextPrime = 0;
+        private uint _mNextPrime;
+
+        public static void Write(string implementationDirectory, string testDirectory)
+        {
+            VectorGenerator vectorGenerator = new VectorGenerator();
+            vectorGenerator._mImplementationDirectory = implementationDirectory;
+            vectorGenerator._mTestDirectory = testDirectory;
+
+            for (int rows = 1; rows <= 4; rows++)
+            {
+                for (int columns = 1; columns <= 4; columns++)
+                {
+                    if (rows == 1 && columns == 1) // don't generate type1x1
+                        continue;
+
+
+                    if (rows == 1) // ignore row vectors for now
+                        continue;
+
+                    vectorGenerator.WriteType("Fp", rows, columns, Features.Arithmetic | Features.UnaryNegation);
+                    vectorGenerator.WriteType("int", rows, columns,
+                        Features.Arithmetic | Features.UnaryNegation | Features.BitwiseLogic |
+                        Features.BitwiseComplement | Features.Shifts);
+                    vectorGenerator.WriteType("uint", rows, columns,
+                        Features.Arithmetic | Features.UnaryNegation | Features.BitwiseLogic |
+                        Features.BitwiseComplement | Features.Shifts);
+                    // vectorGenerator.WriteType("ulong", rows, columns,
+                    //     Features.Arithmetic | Features.BitwiseLogic | Features.BitwiseComplement | Features.Shifts);
+                    vectorGenerator.WriteType("bool", rows, columns, Features.BitwiseLogic);
+                }
+            }
+
+            vectorGenerator.WriteMatrix();
+            vectorGenerator.WriteMath();
+        }
+
         private uint NextPrime()
         {
-            return m_primes[m_NextPrime++ & 255]; //TODO: fix
+            return m_primes[_mNextPrime++ & 255]; //TODO: fix
         }
 
         [Flags]
         private enum Features
         {
+            None = 0,
             Arithmetic = 1 << 0,
             Shifts = 1 << 1,
             BitwiseLogic = 1 << 2,
             BitwiseComplement = 1 << 3,
             UnaryNegation = 1 << 4,
-            All = Arithmetic | Shifts | BitwiseLogic | BitwiseComplement | UnaryNegation
+            // All = Arithmetic | Shifts | BitwiseLogic | BitwiseComplement | UnaryNegation
         }
 
-        static readonly string[] components = { "x", "y", "z", "w" };
-        static readonly string[] vectorFields = { "x", "y", "z", "w" };
-        static readonly string[] matrixFields = { "c0", "c1", "c2", "c3" };
-        static readonly string[] shuffleComponents = { "LeftX", "LeftY", "LeftZ", "LeftW", "RightX", "RightY", "RightZ", "RightW" };
+        static readonly string[] Components = { "x", "y", "z", "w" };
+        static readonly string[] VectorFields = { "x", "y", "z", "w" };
+        static readonly string[] MatrixFields = { "c0", "c1", "c2", "c3" };
+
+        static readonly string[] ShuffleComponents =
+            { "LeftX", "LeftY", "LeftZ", "LeftW", "RightX", "RightY", "RightZ", "RightW" };
 
         [StructLayout(LayoutKind.Explicit)]
         internal struct UIntFloatUnion
         {
-            [FieldOffset(0)]
-            public uint uintValue;
-            [FieldOffset(0)]
-            public float floatValue;
+            [FieldOffset(0)] public uint uintValue;
+            [FieldOffset(0)] public float floatValue;
         }
 
         [StructLayout(LayoutKind.Explicit)]
         internal struct ULongDoubleUnion
         {
-            [FieldOffset(0)]
-            public ulong ulongValue;
-            [FieldOffset(0)]
-            public double doubleValue;
+            [FieldOffset(0)] public ulong ulongValue;
+            [FieldOffset(0)] public double doubleValue;
         }
 
         public static uint AsUInt(float x)
@@ -109,7 +148,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         {
             string name = baseType;
             if (rows == 1 && columns > 1)
-                return name + columns;  // row vector
+                return name + columns; // row vector
 
             if (rows > 1)
                 name += rows;
@@ -119,13 +158,20 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         }
 
 
-        public enum VectorType { Row, Column, DontCare };
-        public static string ToValueDescription(string baseType, int rows, int columns, int n, bool addRowColumnVectorPrefix = false)
+        public enum VectorType
+        {
+            Row,
+            Column,
+            DontCare
+        }
+
+        public static string ToValueDescription(string baseType, int rows, int columns, int n,
+            bool addRowColumnVectorPrefix = false)
         {
             string name = ToTypeName(baseType, rows, columns);
 
             string numStr = "";
-            switch(n)
+            switch (n)
             {
                 case 1:
                     numStr = baseType == "int" ? "an " : "a ";
@@ -141,17 +187,19 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     break;
             }
 
-            string vectorPrefix = addRowColumnVectorPrefix ? ((rows == 1) ? " row" : (columns == 1) ? " column" : "") : "";
+            string vectorPrefix =
+                addRowColumnVectorPrefix ? ((rows == 1) ? " row" : (columns == 1) ? " column" : "") : "";
 
-            if(n > 1)
-                return numStr + name + ((rows == 1 && columns == 1) ? " values" : (rows > 1 && columns > 1) ? " matrices" : vectorPrefix + " vectors");
-            else
-                return numStr + name + ((rows == 1 && columns == 1) ? " value" : (rows > 1 && columns > 1) ? " matrix" : vectorPrefix + " vector");
+            if (n > 1)
+                return numStr + name + ((rows == 1 && columns == 1) ? " values" :
+                    (rows > 1 && columns > 1) ? " matrices" : vectorPrefix + " vectors");
+            return numStr + name + ((rows == 1 && columns == 1) ? " value" :
+                (rows > 1 && columns > 1) ? " matrix" : vectorPrefix + " vector");
         }
 
         public static string ToTypedLiteral(string baseType, int value)
         {
-            switch(baseType)
+            switch (baseType)
             {
                 case "int":
                     return "" + value;
@@ -162,8 +210,8 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     return "" + value + ".0f";
                 case "double":
                     return "" + value + ".0";
-                case "fp":
-                    return "(fp)" + value;
+                case "Fp":
+                    return "(Fp)" + value;
                 default:
                     return "";
             }
@@ -188,112 +236,90 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         {
             // Convert all tabs to spaces
             text = text.Replace("\t", "    ");
+
+            // Generate auto generated comment
+            text = s_AutoGenHeader + text;
             // Normalize line endings, convert all EOL to platform EOL (and let git handle it)
             text = text.Replace("\r\n", "\n");
             text = text.Replace("\n", Environment.NewLine);
 
-            // Generate auto generated comment
-            text = s_AutoGenHeader + text;
-
-            System.IO.File.WriteAllText(filename, text);
+            File.WriteAllText(filename, text);
         }
 
         private void WriteMatrix()
         {
             StringBuilder str = new StringBuilder();
             GenerateMatrixImplementation(str);
-            WriteFile(m_ImplementationDirectory + "/matrix.gen.cs", str.ToString());
+            WriteFile(_mImplementationDirectory + "/Matrix.gen.cs", str.ToString());
         }
 
         private void WriteType(string baseType, int rows, int columns, Features features)
         {
-            m_BaseType = baseType;
-            m_TypeName = ToTypeName(baseType, rows, columns);
-            m_Rows = rows;
-            m_Columns = columns;
-            m_Features = features;
+            _mBaseType = baseType;
+            _mTypeName = ToTypeName(baseType, rows, columns);
+            _mRows = rows;
+            _mColumns = columns;
+            _mFeatures = features;
 
             // implementation
             StringBuilder str = new StringBuilder();
             GenerateTypeImplementation(str);
-            WriteFile(m_ImplementationDirectory + "/" + m_TypeName + ".gen.cs", str.ToString());
-            
+            WriteFile(_mImplementationDirectory + "/" + _mTypeName + ".gen.cs", str.ToString());
 
-            if(m_BaseType != "half")
+
+            if (_mBaseType != "half" && _mBaseType != "ulong")
             {
                 str = new StringBuilder();
                 GenerateTypeTests(str);
-                WriteFile(m_TestDirectory + "/Test" + UpperCaseFirstLetter(m_TypeName) + ".gen.cs", str.ToString());
+                WriteFile(_mTestDirectory + "/Test" + UpperCaseFirstLetter(_mTypeName) + ".gen.cs", str.ToString());
             }
         }
+
         private void WriteMath()
         {
             StringBuilder str = new StringBuilder();
             GenerateMathTests(str);
-            WriteFile(m_TestDirectory + "/TestMath.gen.cs", str.ToString());
-        }
-
-        public static void Write(string implementationDirectory, string testDirectory)
-        {
-            VectorGenerator vectorGenerator = new VectorGenerator();
-            vectorGenerator.m_ImplementationDirectory = implementationDirectory;
-            vectorGenerator.m_TestDirectory = testDirectory;
-
-            for(int rows = 1; rows <= 4; rows++)
-            {
-                for(int columns = 1; columns <= 4; columns++)
-                {
-                    if (rows == 1 && columns == 1)  // don't generate type1x1
-                        continue;
-
-
-                    if (rows == 1)  // ignore row vectors for now
-                        continue;
-
-                    vectorGenerator.WriteType("fp", rows, columns, Features.Arithmetic | Features.UnaryNegation);
-                }
-            }
-
-            vectorGenerator.WriteMatrix();
-            vectorGenerator.WriteMath();
+            WriteFile(_mTestDirectory + "/TestMath.gen.cs", str.ToString());
         }
 
 
         private void GenerateMemberVariables(StringBuilder str)
         {
-            if(m_Columns > 1)
+            if (_mColumns > 1)
             {
-                string columnType = ToTypeName(m_BaseType, m_Rows, 1);
-                for (int i = 0; i < m_Columns; i++)
-                    str.AppendFormat("\t\tpublic {0} {1};\n", columnType, matrixFields[i]);
+                string columnType = ToTypeName(_mBaseType, _mRows, 1);
+                for (int i = 0; i < _mColumns; i++)
+                    str.AppendFormat("\t\tpublic {0} {1};\n", columnType, MatrixFields[i]);
             }
             else
             {
-                for (int i = 0; i < m_Rows; i++)
+                for (int i = 0; i < _mRows; i++)
                 {
-                    if (m_Columns == 1 && m_BaseType == "bool")
+                    if (_mColumns == 1 && _mBaseType == "bool")
                         str.Append("\t\t[MarshalAs(UnmanagedType.U1)]\n");
-                    str.AppendFormat("\t\tpublic {0} {1};\n", m_BaseType, vectorFields[i]);
+                    str.AppendFormat("\t\tpublic {0} {1};\n", _mBaseType, VectorFields[i]);
                 }
             }
+
             str.Append("\n");
         }
 
         private void GenerateStaticFields(StringBuilder str)
         {
-            if (m_BaseType == "int" || m_BaseType == "uint" || m_BaseType == "half" || m_BaseType == "float" || m_BaseType == "double" || m_BaseType == "fp")
+            if (_mBaseType == "int" || _mBaseType == "uint" || _mBaseType == "half" || _mBaseType == "float" ||
+                _mBaseType == "double" || _mBaseType == "Fp")
             {
-                string zeroStr = ToTypedLiteral(m_BaseType, 0);
+                string zeroStr = ToTypedLiteral(_mBaseType, 0);
 
                 // identity
-                if (m_Rows == m_Columns)
+                if (_mRows == _mColumns)
                 {
-                    string oneStr = ToTypedLiteral(m_BaseType, 1);
-                    str.AppendFormat("\t\t/// <summary>{0} identity transform.</summary>\n", m_TypeName);
-                    str.AppendFormat("\t\tpublic static readonly {0} identity = new {0}(", m_TypeName);
-                    for (int row = 0; row < m_Rows; row++)
+                    string oneStr = ToTypedLiteral(_mBaseType, 1);
+                    str.AppendFormat("\t\t/// <summary>{0} identity transform.</summary>\n", _mTypeName);
+                    str.AppendFormat("\t\tpublic static readonly {0} identity = new {0}(", _mTypeName);
+                    for (int row = 0; row < _mRows; row++)
                     {
-                        for (int column = 0; column < m_Columns; column++)
+                        for (int column = 0; column < _mColumns; column++)
                         {
                             if (row != 0 || column != 0)
                                 str.Append(", ");
@@ -302,12 +328,13 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                             str.Append(row == column ? oneStr : zeroStr);
                         }
                     }
+
                     str.Append(");\n\n");
                 }
 
                 // zero
-                str.AppendFormat("\t\t/// <summary>{0} zero value.</summary>\n", m_TypeName);
-                str.AppendFormat("\t\tpublic static readonly {0} zero;\n", m_TypeName);
+                str.AppendFormat("\t\t/// <summary>{0} zero value.</summary>\n", _mTypeName);
+                str.AppendFormat("\t\tpublic static readonly {0} zero;\n", _mTypeName);
             }
 
             str.Append("\n");
@@ -315,65 +342,85 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         private void GenerateDebuggerTypeProxy(StringBuilder str)
         {
-            if (m_Columns > 1)
+            if (_mColumns > 1)
                 return;
 
             str.Append("\t\tinternal sealed class DebuggerProxy\n");
             str.Append("\t\t{\n");
-            for (int i = 0; i < m_Rows; i++)
+            for (int i = 0; i < _mRows; i++)
             {
-                str.AppendFormat("\t\t\tpublic {0} {1};\n", m_BaseType, vectorFields[i]);
+                str.AppendFormat("\t\t\tpublic {0} {1};\n", _mBaseType, VectorFields[i]);
             }
 
-            str.AppendFormat("\t\t\tpublic DebuggerProxy({0} v)\n", m_TypeName);
+            str.AppendFormat("\t\t\tpublic DebuggerProxy({0} v)\n", _mTypeName);
             str.Append("\t\t\t{\n");
-            for (int i = 0; i < m_Rows; i++)
+            for (int i = 0; i < _mRows; i++)
             {
-                str.AppendFormat("\t\t\t\t{0} = v.{0};\n", vectorFields[i]);
+                str.AppendFormat("\t\t\t\t{0} = v.{0};\n", VectorFields[i]);
             }
+
             str.Append("\t\t\t}\n");
             str.Append("\t\t}\n\n");
         }
 
-        private void GenerateConversion(StringBuilder str, StringBuilder opStr, StringBuilder mathStr, string sourceBaseType, bool isExplicit, bool isScalar)
+        private void GenerateConversion(StringBuilder str, StringBuilder opStr, StringBuilder mathStr,
+            string sourceBaseType, bool isExplicit, bool isScalar)
         {
-            string sourceType = isScalar ? sourceBaseType : ToTypeName(sourceBaseType, m_Rows, m_Columns);
+            string sourceType = isScalar ? sourceBaseType : ToTypeName(sourceBaseType, _mRows, _mColumns);
 
-            int fieldCount = (m_Columns > 1) ? m_Columns : m_Rows;
-            string[] fields = (m_Columns > 1) ? matrixFields : vectorFields;
-            string dstFieldType = (m_Columns > 1) ? ToTypeName(m_BaseType, m_Rows, 1) : m_BaseType;
-            string dstTypeCategory = (m_Columns > 1) ? "matrix" : "vector";
-            string plicitlyString = isExplicit ? "Explicitly" : "Implicitly";
+            int fieldCount = (_mColumns > 1) ? _mColumns : _mRows;
+            string[] fields = (_mColumns > 1) ? MatrixFields : VectorFields;
+            string dstFieldType = (_mColumns > 1) ? ToTypeName(_mBaseType, _mRows, 1) : _mBaseType;
+            string dstTypeCategory = (_mColumns > 1) ? "matrix" : "vector";
+            string explicitlyString = isExplicit ? "Explicitly" : "Implicitly";
 
             if (isScalar)
             {
-                if(sourceBaseType != m_BaseType)
+                if (sourceBaseType != _mBaseType)
                 {
-                    str.AppendFormat("\t\t/// <summary>Constructs a {0} {1} from a single {2} value by converting it to {3} and assigning it to every component.</summary>\n", m_TypeName, dstTypeCategory, sourceType, m_BaseType);
-                    mathStr.AppendFormat("\t\t/// <summary>Returns a {0} {1} constructed from a single {2} value by converting it to {3} and assigning it to every component.</summary>\n", m_TypeName, dstTypeCategory, sourceType, m_BaseType);
-                    opStr.AppendFormat("\t\t/// <summary>{0} converts a single {1} value to a {2} {3} by converting it to {4} and assigning it to every component.</summary>\n", plicitlyString, sourceType, m_TypeName, dstTypeCategory, m_BaseType);
+                    str.AppendFormat(
+                        "\t\t/// <summary>Constructs a {0} {1} from a single {2} value by converting it to {3} and assigning it to every component.</summary>\n",
+                        _mTypeName, dstTypeCategory, sourceType, _mBaseType);
+                    mathStr.AppendFormat(
+                        "\t\t/// <summary>Returns a {0} {1} constructed from a single {2} value by converting it to {3} and assigning it to every component.</summary>\n",
+                        _mTypeName, dstTypeCategory, sourceType, _mBaseType);
+                    opStr.AppendFormat(
+                        "\t\t/// <summary>{0} converts a single {1} value to a {2} {3} by converting it to {4} and assigning it to every component.</summary>\n",
+                        explicitlyString, sourceType, _mTypeName, dstTypeCategory, _mBaseType);
                 }
                 else
                 {
-                    str.AppendFormat("\t\t/// <summary>Constructs a {0} {1} from a single {2} value by assigning it to every component.</summary>\n", m_TypeName, dstTypeCategory, sourceType);
-                    mathStr.AppendFormat("\t\t/// <summary>Returns a {0} {1} constructed from a single {2} value by assigning it to every component.</summary>\n", m_TypeName, dstTypeCategory, sourceType);
-                    opStr.AppendFormat("\t\t/// <summary>{0} converts a single {1} value to a {2} {3} by assigning it to every component.</summary>\n", plicitlyString, sourceType, m_TypeName, dstTypeCategory);
+                    str.AppendFormat(
+                        "\t\t/// <summary>Constructs a {0} {1} from a single {2} value by assigning it to every component.</summary>\n",
+                        _mTypeName, dstTypeCategory, sourceType);
+                    mathStr.AppendFormat(
+                        "\t\t/// <summary>Returns a {0} {1} constructed from a single {2} value by assigning it to every component.</summary>\n",
+                        _mTypeName, dstTypeCategory, sourceType);
+                    opStr.AppendFormat(
+                        "\t\t/// <summary>{0} converts a single {1} value to a {2} {3} by assigning it to every component.</summary>\n",
+                        explicitlyString, sourceType, _mTypeName, dstTypeCategory);
                 }
             }
             else
             {
-                if (sourceBaseType != m_BaseType)
+                if (sourceBaseType != _mBaseType)
                 {
-                    str.AppendFormat("\t\t/// <summary>Constructs a {0} {1} from a {2} {1} by componentwise conversion.</summary>\n", m_TypeName, dstTypeCategory, sourceType);
-                    mathStr.AppendFormat("\t\t/// <summary>Return a {0} {1} constructed from a {2} {1} by componentwise conversion.</summary>\n", m_TypeName, dstTypeCategory, sourceType);
-                    opStr.AppendFormat("\t\t/// <summary>{0} converts a {1} {2} to a {3} {2} by componentwise conversion.</summary>\n", plicitlyString, sourceType, dstTypeCategory, m_TypeName);
+                    str.AppendFormat(
+                        "\t\t/// <summary>Constructs a {0} {1} from a {2} {1} by componentwise conversion.</summary>\n",
+                        _mTypeName, dstTypeCategory, sourceType);
+                    mathStr.AppendFormat(
+                        "\t\t/// <summary>Return a {0} {1} constructed from a {2} {1} by componentwise conversion.</summary>\n",
+                        _mTypeName, dstTypeCategory, sourceType);
+                    opStr.AppendFormat(
+                        "\t\t/// <summary>{0} converts a {1} {2} to a {3} {2} by componentwise conversion.</summary>\n",
+                        explicitlyString, sourceType, dstTypeCategory, _mTypeName);
                 }
             }
-            
+
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic {0}({1} v)\n", m_TypeName, sourceType);
+            str.AppendFormat("\t\tpublic {0}({1} v)\n", _mTypeName, sourceType);
             str.Append("\t\t{\n");
-            for(int i = 0; i < fieldCount; i++)
+            for (int i = 0; i < fieldCount; i++)
             {
                 string rhs = "v";
                 if (!isScalar)
@@ -382,71 +429,84 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 {
                     if (sourceBaseType == "bool")
                     {
-                        if (m_Columns > 1)
-                            rhs = string.Format("math.select(new {0}({1}), new {0}({2}), {3})", dstFieldType, ToTypedLiteral(m_BaseType, 0), ToTypedLiteral(m_BaseType, 1), rhs);
+                        if (_mColumns > 1)
+                            rhs = string.Format("select(new {0}({1}), new {0}({2}), {3})", dstFieldType,
+                                ToTypedLiteral(_mBaseType, 0), ToTypedLiteral(_mBaseType, 1), rhs);
                         else
-                            rhs = rhs + " ? " + ToTypedLiteral(m_BaseType, 1) + " : " + ToTypedLiteral(m_BaseType, 0);
+                            rhs = rhs + " ? " + ToTypedLiteral(_mBaseType, 1) + " : " + ToTypedLiteral(_mBaseType, 0);
                     }
-                        
+                    else if (sourceBaseType == "ulong" && _mBaseType == "Fp")
+                    {
+                        // ** ulong 转 Fp 特殊处理
+                        var typecasting = (_mColumns == 1 ? "(long)" : "");
+                        rhs = $"new {dstFieldType}({typecasting}{rhs})";
+                    }
                     else
+                    {
                         rhs = "(" + dstFieldType + ")" + rhs;
+                    }
                 }
-                    
+
 
                 str.AppendFormat("\t\t\tthis.{0} = {1};\n", fields[i], rhs);
             }
+
             str.Append("\t\t}\n\n");
 
             mathStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            mathStr.AppendFormat("\t\tpublic static {0} {0}({1} v) {{ return new {0}(v); }}\n\n", m_TypeName, sourceType);
+            mathStr.AppendFormat("\t\tpublic static {0} {0}({1} v) {{ return new {0}(v); }}\n\n", _mTypeName,
+                sourceType);
 
             opStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            opStr.AppendFormat("\t\tpublic static {0} operator {1}({2} v) {{ return new {1}(v); }}\n\n", isExplicit ? "explicit" : "implicit", m_TypeName, sourceType);
+            opStr.AppendFormat("\t\tpublic static {0} operator {1}({2} v) {{ return new {1}(v); }}\n\n",
+                isExplicit ? "explicit" : "implicit", _mTypeName, sourceType);
         }
 
         private void GenerateConversionConstructorsAndOperators(StringBuilder str, StringBuilder mathStr)
         {
             StringBuilder opStr = new StringBuilder();
 
-            GenerateConversion(str, opStr, mathStr, m_BaseType, false, true);
+            GenerateConversion(str, opStr, mathStr, _mBaseType, false, true);
 
-            if (m_BaseType == "int")
+            if (_mBaseType == "int")
             {
                 GenerateConversion(str, opStr, mathStr, "bool", true, true);
                 GenerateConversion(str, opStr, mathStr, "bool", true, false);
                 GenerateConversion(str, opStr, mathStr, "uint", true, true);
                 GenerateConversion(str, opStr, mathStr, "uint", true, false);
-                GenerateConversion(str, opStr, mathStr, "float", true, true);
-                GenerateConversion(str, opStr, mathStr, "float", true, false);
-                GenerateConversion(str, opStr, mathStr, "double", true, true);
-                GenerateConversion(str, opStr, mathStr, "double", true, false);
+                // GenerateConversion(str, opStr, mathStr, "float", true, true);
+                // GenerateConversion(str, opStr, mathStr, "float", true, false);
+                // GenerateConversion(str, opStr, mathStr, "double", true, true);
+                // GenerateConversion(str, opStr, mathStr, "double", true, false);
             }
-            else if (m_BaseType == "uint")
+            else if (_mBaseType == "uint")
             {
                 GenerateConversion(str, opStr, mathStr, "bool", true, true);
                 GenerateConversion(str, opStr, mathStr, "bool", true, false);
                 GenerateConversion(str, opStr, mathStr, "int", true, true);
                 GenerateConversion(str, opStr, mathStr, "int", true, false);
-                GenerateConversion(str, opStr, mathStr, "float", true, true);
-                GenerateConversion(str, opStr, mathStr, "float", true, false);
-                GenerateConversion(str, opStr, mathStr, "double", true, true);
-                GenerateConversion(str, opStr, mathStr, "double", true, false);
+                // GenerateConversion(str, opStr, mathStr, "float", true, true);
+                // GenerateConversion(str, opStr, mathStr, "float", true, false);
+                // GenerateConversion(str, opStr, mathStr, "double", true, true);
+                // GenerateConversion(str, opStr, mathStr, "double", true, false);
             }
-            else if (m_BaseType == "half")
+            else if (_mBaseType == "half")
             {
                 GenerateConversion(str, opStr, mathStr, "float", true, true);
                 GenerateConversion(str, opStr, mathStr, "float", true, false);
                 GenerateConversion(str, opStr, mathStr, "double", true, true);
                 GenerateConversion(str, opStr, mathStr, "double", true, false);
             }
-            else if (m_BaseType == "fp")
+            else if (_mBaseType == "Fp")
             {
                 GenerateConversion(str, opStr, mathStr, "int", true, true);
                 GenerateConversion(str, opStr, mathStr, "int", true, false);
                 GenerateConversion(str, opStr, mathStr, "uint", true, true);
                 GenerateConversion(str, opStr, mathStr, "uint", true, false);
+                // GenerateConversion(str, opStr, mathStr, "ulong", true, true);
+                // GenerateConversion(str, opStr, mathStr, "ulong", true, false);
             }
-            else if (m_BaseType == "float")
+            else if (_mBaseType == "float")
             {
                 GenerateConversion(str, opStr, mathStr, "bool", true, true);
                 GenerateConversion(str, opStr, mathStr, "bool", true, false);
@@ -454,16 +514,16 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 GenerateConversion(str, opStr, mathStr, "int", false, false);
                 GenerateConversion(str, opStr, mathStr, "uint", false, true);
                 GenerateConversion(str, opStr, mathStr, "uint", false, false);
-                if(m_Columns == 1)
+                if (_mColumns == 1)
                 {
                     GenerateConversion(str, opStr, mathStr, "half", false, true);
                     GenerateConversion(str, opStr, mathStr, "half", false, false);
                 }
-                
+
                 GenerateConversion(str, opStr, mathStr, "double", true, true);
                 GenerateConversion(str, opStr, mathStr, "double", true, false);
             }
-            else if (m_BaseType == "double")
+            else if (_mBaseType == "double")
             {
                 GenerateConversion(str, opStr, mathStr, "bool", true, true);
                 GenerateConversion(str, opStr, mathStr, "bool", true, false);
@@ -471,15 +531,16 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 GenerateConversion(str, opStr, mathStr, "int", false, false);
                 GenerateConversion(str, opStr, mathStr, "uint", false, true);
                 GenerateConversion(str, opStr, mathStr, "uint", false, false);
-                if (m_Columns == 1)
+                if (_mColumns == 1)
                 {
                     GenerateConversion(str, opStr, mathStr, "half", false, true);
                     GenerateConversion(str, opStr, mathStr, "half", false, false);
                 }
+
                 GenerateConversion(str, opStr, mathStr, "float", false, true);
                 GenerateConversion(str, opStr, mathStr, "float", false, false);
             }
-            
+
 
             str.Append("\n");
             str.Append(opStr);
@@ -492,22 +553,24 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
             str.Append("using System;\n");
             str.Append("using System.Runtime.CompilerServices;\n");
-            if (m_Columns == 1 && m_BaseType == "bool")
-                str.Append("using System.Runtime.InteropServices;\n");  // for MarshalAs
-            if (m_Columns == 1)
-                str.Append("using System.Diagnostics;\n");   // for DebuggerTypeProxy
-            str.Append("using static Unity.Mathematics.math;\n");
+            if (_mColumns == 1 && _mBaseType == "bool")
+                str.Append("using System.Runtime.InteropServices;\n"); // for MarshalAs
+            if (_mColumns == 1)
+                str.Append("using System.Diagnostics;\n"); // for DebuggerTypeProxy
+            str.Append("using static Unity.Mathematics.FixedPoint.MathFp;\n");
+            str.Append("using Unity.IL2CPP.CompilerServices;\n");
             str.Append("\n");
             str.Append("#pragma warning disable 0660, 0661\n\n");
             str.Append("namespace Unity.Mathematics.FixedPoint\n");
             str.Append("{\n");
 
-            if (m_Columns == 1)
-                str.AppendFormat("\t[DebuggerTypeProxy(typeof({0}.DebuggerProxy))]\n", m_TypeName);
-            if(m_BaseType != "half")
+            if (_mColumns == 1)
+                str.AppendFormat("\t[DebuggerTypeProxy(typeof({0}.DebuggerProxy))]\n", _mTypeName);
+            if (_mBaseType != "half")
                 str.Append("\t[System.Serializable]\n");
-            str.AppendFormat("\tpublic partial struct {0} : System.IEquatable<{0}>", m_TypeName);
-            if (m_BaseType != "bool")
+            str.Append("\t[Il2CppEagerStaticClassConstruction]\n");
+            str.AppendFormat("\tpublic partial struct {0} : System.IEquatable<{0}>", _mTypeName);
+            if (_mBaseType != "bool")
                 str.Append(", IFormattable");
             str.Append("\n\t{\n");
 
@@ -521,15 +584,17 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
             GenerateOperators(str);
 
-            var isMatrix = m_Rows > 1 && m_Columns > 1;
+            var isMatrix = _mRows > 1 && _mColumns > 1;
 
-            if(m_Rows == 4 && m_Columns == 4 && (m_BaseType == "float" || m_BaseType == "double"))
+            if (_mRows == 4 && _mColumns == 4 &&
+                (_mBaseType == "float" || _mBaseType == "double" || _mBaseType == "Fp"))
             {
-                
-                GenerateMulImplementation("rotate", m_BaseType, mathStr, 4, 4, 3, 1, false,
-                    string.Format("Return the result of rotating a {0} vector by a {1} matrix", ToTypeName(m_BaseType, 3, 1), ToTypeName(m_BaseType, 4, 4)));
-                GenerateMulImplementation("transform", m_BaseType, mathStr, 4, 4, 3, 1, true,
-                    string.Format("Return the result of transforming a {0} point by a {1} matrix", ToTypeName(m_BaseType, 3, 1), ToTypeName(m_BaseType, 4, 4)));
+                GenerateMulImplementation("rotate", _mBaseType, mathStr, 4, 4, 3, 1, false,
+                    string.Format("Return the result of rotating a {0} vector by a {1} matrix",
+                        ToTypeName(_mBaseType, 3, 1), ToTypeName(_mBaseType, 4, 4)));
+                GenerateMulImplementation("transform", _mBaseType, mathStr, 4, 4, 3, 1, true,
+                    string.Format("Return the result of transforming a {0} point by a {1} matrix",
+                        ToTypeName(_mBaseType, 3, 1), ToTypeName(_mBaseType, 4, 4)));
             }
 
             GenerateTransposeFunction(mathStr);
@@ -539,7 +604,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             GenerateHashFunction(mathStr, false);
             GenerateHashFunction(mathStr, true);
 
-            if (m_Columns == 1)
+            if (_mColumns == 1)
             {
                 str.Append("\n\n");
                 GenerateSwizzles(str);
@@ -558,21 +623,21 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
             str.Append("\n");
             GenerateToStringFunction(str, false);
-            if(m_BaseType != "bool")
+            if (_mBaseType != "bool")
                 GenerateToStringFunction(str, true);
 
             GenerateDebuggerTypeProxy(str);
 
 
             // Internal members last
-            if (m_Columns == 1 && m_BaseType != "half")
+            if (_mColumns == 1 && _mBaseType != "half")
             {
                 GenerateSelectShuffleComponentImplementation(mathStr);
             }
 
             str.Append("\t}\n\n");
 
-            str.Append("\tpublic static partial class fpmath\n");
+            str.Append("\tpublic static partial class MathFp\n");
             str.Append("\t{\n");
             str.Append(mathStr);
             str.Append("\t}\n}\n");
@@ -580,62 +645,70 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         private void GenerateSelectShuffleComponentImplementation(StringBuilder str)
         {
-            if (m_Columns > 1)
+            if (_mColumns > 1)
                 return;
 
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tinternal static {0} select_shuffle_component({1} a, {1} b, ShuffleComponent component)\n", m_BaseType, m_TypeName);
+            str.AppendFormat(
+                "\t\tinternal static {0} select_shuffle_component({1} a, {1} b, ShuffleComponent component)\n",
+                _mBaseType, _mTypeName);
             str.Append("\t\t{\n");
             str.Append("\t\t\tswitch(component)\n");
             str.Append("\t\t\t{\n");
-            for(int i = 0; i < m_Rows; i++)
+            for (int i = 0; i < _mRows; i++)
             {
-                str.AppendFormat("\t\t\t\tcase ShuffleComponent.{0}:\n", shuffleComponents[i]);
-                str.AppendFormat("\t\t\t\t\treturn a{0};\n", m_Rows > 1 ? "." + vectorFields[i] : "");
+                str.AppendFormat("\t\t\t\tcase ShuffleComponent.{0}:\n", ShuffleComponents[i]);
+                str.AppendFormat("\t\t\t\t\treturn a{0};\n", _mRows > 1 ? "." + VectorFields[i] : "");
             }
-            for (int i = 0; i < m_Rows; i++)
+
+            for (int i = 0; i < _mRows; i++)
             {
-                str.AppendFormat("\t\t\t\tcase ShuffleComponent.{0}:\n", shuffleComponents[i + 4]);
-                str.AppendFormat("\t\t\t\t\treturn b{0};\n", m_Rows > 1 ? "." + vectorFields[i] : "");
+                str.AppendFormat("\t\t\t\tcase ShuffleComponent.{0}:\n", ShuffleComponents[i + 4]);
+                str.AppendFormat("\t\t\t\t\treturn b{0};\n", _mRows > 1 ? "." + VectorFields[i] : "");
             }
+
             str.Append("\t\t\t\tdefault:\n");
-            str.Append("\t\t\t\t\tthrow new System.ArgumentException(\"Invalid shuffle component: \" + component);\n");
+            str.Append(
+                "\t\t\t\t\tthrow new System.ArgumentException(\"Invalid shuffle component: \" + (int)component);\n");
             str.Append("\t\t\t}\n");
-            str.Append("\t\t}\n\n");    
+            str.Append("\t\t}\n\n");
         }
 
         private void GenerateShuffleImplementation(StringBuilder str)
         {
-            if (m_Columns > 1 || m_BaseType == "half")
+            if (_mColumns > 1 || _mBaseType == "half")
                 return;
 
             for (int resultComponents = 1; resultComponents <= 4; resultComponents++)
             {
-                string resultType = ToTypeName(m_BaseType, resultComponents, 1);
+                string resultType = ToTypeName(_mBaseType, resultComponents, 1);
 
-                str.AppendFormat("\t\t/// <summary>Returns the result of specified shuffling of the components from {0} into {1}.</summary>\n",
-                    ToValueDescription(m_BaseType, m_Rows, m_Columns, 2), ToValueDescription(m_BaseType, resultComponents, m_Columns, 1));
+                str.AppendFormat(
+                    "\t\t/// <summary>Returns the result of specified shuffling of the components from {0} into {1}.</summary>\n",
+                    ToValueDescription(_mBaseType, _mRows, _mColumns, 2),
+                    ToValueDescription(_mBaseType, resultComponents, _mColumns, 1));
                 str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-                str.AppendFormat("\t\tpublic static {0} shuffle({1} a, {2} b", resultType, m_TypeName, m_TypeName);
-                for(int i = 0; i < resultComponents; i++)
+                str.AppendFormat("\t\tpublic static {0} shuffle({1} a, {2} b", resultType, _mTypeName, _mTypeName);
+                for (int i = 0; i < resultComponents; i++)
                 {
-                    str.AppendFormat(", ShuffleComponent {0}", vectorFields[i]);
+                    str.AppendFormat(", ShuffleComponent {0}", VectorFields[i]);
                 }
+
                 str.Append(")\n");
                 str.Append("\t\t{\n");
 
-                if(resultComponents != 1)
+                if (resultComponents != 1)
                     str.AppendFormat("\t\t\treturn {0}(\n", resultType);
                 else
-                    str.AppendFormat("\t\t\treturn ", resultType);
-                            
-                for(int i = 0; i < resultComponents; i++)
+                    str.AppendFormat("\t\t\treturn ");
+
+                for (int i = 0; i < resultComponents; i++)
                 {
                     if (resultComponents != 1)
                         str.Append("\t\t\t\t");
 
-                    str.AppendFormat("select_shuffle_component(a, b, {0})", vectorFields[i]);
-                    if(i != resultComponents - 1)
+                    str.AppendFormat("select_shuffle_component(a, b, {0})", VectorFields[i]);
+                    if (i != resultComponents - 1)
                         str.Append(",\n");
                 }
 
@@ -648,20 +721,22 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             }
         }
 
-        private void GenerateMulImplementation(string name, string baseType, StringBuilder str, int lhsRows, int lhsColumns, int rhsRows, int rhsColumns, bool doTranslation, string desc)
+        private void GenerateMulImplementation(string name, string baseType, StringBuilder str, int lhsRows,
+            int lhsColumns, int rhsRows, int rhsColumns, bool doTranslation, string desc)
         {
-            // mul(a,b): if a is vector it is treated as a row vector. if b is a vector it is treaded as a column vector.
-            bool isResultRowVector = (lhsRows == 1 && lhsColumns > 1);
+            // mul(a,b): if a is vector it is treated as a row vector. if b is a vector it is treated as a column vector.
+            // bool isResultRowVector = (lhsRows == 1 && lhsColumns > 1);
             int resultRows = (lhsColumns != rhsRows) ? rhsRows : lhsRows;
             string resultType = ToTypeName(baseType, resultRows, rhsColumns);
             string lhsType = ToTypeName(baseType, lhsRows, lhsColumns);
             string rhsType = ToTypeName(baseType, rhsRows, rhsColumns);
 
-            bool isScalarResult = (resultRows == 1 && rhsColumns == 1);
+            // bool isScalarResult = (resultRows == 1 && rhsColumns == 1);
             bool needsSwizzle = (resultRows != lhsRows);
-            if(desc == "")
+            if (desc == "")
             {
-                str.AppendFormat("\t\t/// <summary>Returns the {0} result of a matrix multiplication between {1} and {2}.</summary>\n",
+                str.AppendFormat(
+                    "\t\t/// <summary>Returns the {0} result of a matrix multiplication between {1} and {2}.</summary>\n",
                     ToValueDescription(baseType, resultRows, rhsColumns, 0, true),
                     ToValueDescription(baseType, lhsRows, lhsColumns, 1, true),
                     ToValueDescription(baseType, rhsRows, rhsColumns, 1, true));
@@ -670,7 +745,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {
                 str.AppendFormat("\t\t/// <summary>{0}</summary>\n", desc);
             }
-            
+
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             str.AppendFormat("\t\tpublic static {1} {0}({2} a, {3} b)\n", name, resultType, lhsType, rhsType);
             str.Append("\t\t{\n");
@@ -683,43 +758,46 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 str.Append(resultType);
             if (needsParen)
                 str.Append("(");
-            
+
             for (int i = 0; i < rhsColumns; i++)
             {
                 if (i > 0 || rhsColumns > 1)
                     str.Append("\n\t\t\t\t");
                 for (int j = 0; j < lhsColumns; j++)
                 {
-                    if(j < rhsRows || doTranslation)
+                    if (j < rhsRows || doTranslation)
                     {
                         if (j != 0)
                             str.Append(" + ");
 
+                        // ** NOTE: mul 需要在计算过程中忽略计算产生的极小值
+                        str.Append("IgnoreTooSmallNumber(");
                         if (lhsRows == 1 && lhsColumns == 1)
                             str.Append("a");
                         else if (lhsRows == 1 || lhsColumns == 1)
-                            str.Append("a." + vectorFields[j]);
+                            str.Append("a." + VectorFields[j]);
                         else
-                            str.Append("a." + matrixFields[j]);
+                            str.Append("a." + MatrixFields[j]);
 
-                        if(j < rhsRows)
+                        if (j < rhsRows)
                         {
                             str.Append(" * ");
 
                             if (rhsRows == 1 && rhsColumns == 1)
                                 str.Append("b");
                             else if (rhsRows == 1 || rhsColumns == 1)
-                                str.Append("b." + vectorFields[j]);
+                                str.Append("b." + VectorFields[j]);
                             else
-                                str.Append("b." + matrixFields[i] + "." + vectorFields[j]);
+                                str.Append("b." + MatrixFields[i] + "." + VectorFields[j]);
                         }
+                        str.Append(")");
                     }
-                    
                 }
 
                 if (i != rhsColumns - 1)
                     str.Append(",");
             }
+
             if (needsParen)
                 str.Append(")");
             if (needsSwizzle)
@@ -731,19 +809,19 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         private void GenerateMulImplementations(string baseType, StringBuilder str)
         {
-            // typenxk = mul(typenxm, typemxk)
-            for(int n = 1; n <= 4; n++)
+            // type n x k = mul(type n x m, type m x k)
+            for (int n = 1; n <= 4; n++)
             {
-                for(int m = 1; m <= 4; m++)
+                for (int m = 1; m <= 4; m++)
                 {
-                    for(int k = 1; k <= 4; k++)
+                    for (int k = 1; k <= 4; k++)
                     {
-                        // mul(a,b): if a is vector it is treated as a row vector. if b is a vector it is treaded as a column vector.
+                        // mul(a,b): if a is vector it is treated as a row vector. if b is a vector it is treated as a column vector.
 
                         if (n > 1 && m == 1)
-                            continue;   // lhs cannot be column vector
+                            continue; // lhs cannot be column vector
                         if (m == 1 && k > 1)
-                            continue;   // rhs cannot be row vector
+                            continue; // rhs cannot be row vector
 
                         GenerateMulImplementation("mul", baseType, str, n, m, m, k, false, "");
                     }
@@ -758,72 +836,75 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             str.Append("\n");
             str.Append("namespace Unity.Mathematics.FixedPoint\n");
             str.Append("{\n");
-            str.Append("\tpartial class fpmath\n");
+            str.Append("\tpartial class MathFp\n");
             str.Append("\t{\n");
 
-            GenerateMulImplementations("fp", str);
+            GenerateMulImplementations("Fp", str);
 
             str.Append("\t}\n");
             str.Append("}\n");
         }
-        
+
         private string GenerateComponentRangeString(int componentIndex, int numComponents)
         {
             string result = "";
-            for(int i = 0; i < numComponents; i++)
+            for (int i = 0; i < numComponents; i++)
             {
-                result += components[componentIndex + i];
+                result += Components[componentIndex + i];
             }
+
             return result;
         }
 
         // Generate constructor and static constructor with a given component partitioning of input parameters
-        private void GenerateVectorConstructor(int numComponents, int numParameters, int[] parameterComponents, StringBuilder constructorStr, StringBuilder mathStr)
+        private void GenerateVectorConstructor(int numParameters, int[] parameterComponents,
+            StringBuilder constructorStr, StringBuilder mathStr)
         {
             // Generate signatures
-            string dstTypeCategory = (m_Columns > 1) ? "matrix" : "vector";
+            string dstTypeCategory = (_mColumns > 1) ? "matrix" : "vector";
 
             StringBuilder descriptionStr = new StringBuilder();
             {
                 int idx = 0;
                 bool first = true;
-                while(true)
+                while (true)
                 {
                     int paramComponents = parameterComponents[idx];
-                    string paramType = ToTypeName(m_BaseType, paramComponents, 1);
-                    
                     int n = 1;
-                    while(idx + 1 < numParameters && parameterComponents[idx + 1] == paramComponents)
+                    while (idx + 1 < numParameters && parameterComponents[idx + 1] == paramComponents)
                     {
                         n++;
                         idx++;
                     }
+
                     idx++;
 
                     bool last = (idx == numParameters);
                     if (!first)
                         descriptionStr.Append(last ? " and " : ", ");
 
-                    descriptionStr.Append(ToValueDescription(m_BaseType, paramComponents, 1, n));
+                    descriptionStr.Append(ToValueDescription(_mBaseType, paramComponents, 1, n));
                     if (last)
                         break;
                     first = false;
                 }
             }
-            
 
-            constructorStr.AppendFormat("\t\t/// <summary>Constructs a {0} {1} from {2}.</summary>\n", m_TypeName, dstTypeCategory, descriptionStr.ToString());
+
+            constructorStr.AppendFormat("\t\t/// <summary>Constructs a {0} {1} from {2}.</summary>\n", _mTypeName,
+                dstTypeCategory, descriptionStr);
             constructorStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             constructorStr.Append("\t\tpublic ");
-            constructorStr.Append(m_TypeName);
+            constructorStr.Append(_mTypeName);
             constructorStr.Append("(");
 
-            mathStr.AppendFormat("\t\t/// <summary>Returns a {0} {1} constructed from {2}.</summary>\n", m_TypeName, dstTypeCategory, descriptionStr.ToString());
+            mathStr.AppendFormat("\t\t/// <summary>Returns a {0} {1} constructed from {2}.</summary>\n", _mTypeName,
+                dstTypeCategory, descriptionStr);
             mathStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             mathStr.Append("\t\tpublic static ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append(" ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append("(");
 
             int componentIndex = 0;
@@ -836,7 +917,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 }
 
                 int paramComponents = parameterComponents[i];
-                string paramType = ToTypeName(m_BaseType, paramComponents, 1);
+                string paramType = ToTypeName(_mBaseType, paramComponents, 1);
                 string componentString = GenerateComponentRangeString(componentIndex, paramComponents);
 
                 constructorStr.Append(paramType);
@@ -847,13 +928,14 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 mathStr.Append(componentString);
                 componentIndex += paramComponents;
             }
+
             constructorStr.Append(")\n");
             mathStr.Append(")");
-            
+
             // Generate function bodies
             constructorStr.Append("\t\t{ ");
             mathStr.Append(" { return new ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append("(");
 
             componentIndex = 0;
@@ -864,14 +946,15 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 for (int j = 0; j < paramComponents; j++)
                 {
                     constructorStr.Append("\n\t\t\tthis.");
-                    constructorStr.Append(components[componentIndex]);
+                    constructorStr.Append(Components[componentIndex]);
                     constructorStr.Append(" = ");
                     constructorStr.Append(componentString);
                     if (paramComponents > 1)
                     {
                         constructorStr.Append(".");
-                        constructorStr.Append(components[j]);
+                        constructorStr.Append(Components[j]);
                     }
+
                     constructorStr.Append(";");
                     componentIndex++;
                 }
@@ -880,6 +963,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 {
                     mathStr.Append(", ");
                 }
+
                 mathStr.Append(componentString);
             }
 
@@ -888,40 +972,44 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         }
 
         // Recursively generate all constructor variants with every possibly partition or the components
-        private void GenerateVectorConstructors(int numRemainingComponents, int numComponents, int numParameters, int[] parameterComponents, StringBuilder constructorStr, StringBuilder mathStr)
+        private void GenerateVectorConstructors(int numRemainingComponents, int numParameters,
+            int[] parameterComponents, StringBuilder constructorStr, StringBuilder mathStr)
         {
             if (numRemainingComponents == 0)
             {
-                GenerateVectorConstructor(numComponents, numParameters, parameterComponents, constructorStr, mathStr);
+                GenerateVectorConstructor(numParameters, parameterComponents, constructorStr, mathStr);
             }
-            
-            for(int i = 1; i <= numRemainingComponents; i++)
+
+            for (int i = 1; i <= numRemainingComponents; i++)
             {
                 parameterComponents[numParameters] = i;
-                GenerateVectorConstructors(numRemainingComponents - i, numComponents, numParameters + 1, parameterComponents, constructorStr, mathStr);
+                GenerateVectorConstructors(numRemainingComponents - i, numParameters + 1,
+                    parameterComponents, constructorStr, mathStr);
             }
         }
 
         public void GenerateMatrixColumnConstructor(StringBuilder constructorStr, StringBuilder mathStr)
         {
             // Generate signatures
-            string columnType = ToTypeName(m_BaseType, m_Rows, 1);
-            string columnDescription = ToValueDescription(m_BaseType, m_Rows, 1, m_Columns);
-            constructorStr.AppendFormat("\t\t/// <summary>Constructs a {0} matrix from {1}.</summary>\n", m_TypeName, columnDescription);
+            string columnType = ToTypeName(_mBaseType, _mRows, 1);
+            string columnDescription = ToValueDescription(_mBaseType, _mRows, 1, _mColumns);
+            constructorStr.AppendFormat("\t\t/// <summary>Constructs a {0} matrix from {1}.</summary>\n", _mTypeName,
+                columnDescription);
             constructorStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             constructorStr.Append("\t\tpublic ");
-            constructorStr.Append(m_TypeName);
+            constructorStr.Append(_mTypeName);
             constructorStr.Append("(");
 
-            mathStr.AppendFormat("\t\t/// <summary>Returns a {0} matrix constructed from {1}.</summary>\n", m_TypeName, columnDescription);
+            mathStr.AppendFormat("\t\t/// <summary>Returns a {0} matrix constructed from {1}.</summary>\n", _mTypeName,
+                columnDescription);
             mathStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             mathStr.Append("\t\tpublic static ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append(" ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append("(");
 
-            for (int column = 0; column < m_Columns; column++)
+            for (int column = 0; column < _mColumns; column++)
             {
                 if (column != 0)
                 {
@@ -931,33 +1019,35 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
                 constructorStr.Append(columnType);
                 constructorStr.Append(" ");
-                constructorStr.Append(matrixFields[column]);
+                constructorStr.Append(MatrixFields[column]);
                 mathStr.Append(columnType);
                 mathStr.Append(" ");
-                mathStr.Append(matrixFields[column]);
+                mathStr.Append(MatrixFields[column]);
             }
+
             constructorStr.Append(")\n");
             mathStr.Append(")");
 
             // Generate function bodies
-            constructorStr.Append("\t\t{ ");
+            constructorStr.Append("\t\t{");
             mathStr.Append(" { return new ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append("(");
 
-            for (int column = 0; column < m_Columns; column++)
+            for (int column = 0; column < _mColumns; column++)
             {
                 constructorStr.Append("\n\t\t\tthis.");
-                constructorStr.Append(matrixFields[column]);
+                constructorStr.Append(MatrixFields[column]);
                 constructorStr.Append(" = ");
-                constructorStr.Append(matrixFields[column]);
+                constructorStr.Append(MatrixFields[column]);
                 constructorStr.Append(";");
 
                 if (column != 0)
                 {
                     mathStr.Append(", ");
                 }
-                mathStr.Append(matrixFields[column]);
+
+                mathStr.Append(MatrixFields[column]);
             }
 
             constructorStr.Append("\n\t\t}\n\n");
@@ -967,59 +1057,64 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         public void GenerateMatrixRowConstructor(StringBuilder constructorStr, StringBuilder mathStr)
         {
             // Generate signatures
-            constructorStr.AppendFormat("\t\t/// <summary>Constructs a {0} matrix from {1} {2} values given in row-major order.</summary>\n", m_TypeName, m_Rows * m_Columns, m_BaseType);
+            constructorStr.AppendFormat(
+                "\t\t/// <summary>Constructs a {0} matrix from {1} {2} values given in row-major order.</summary>\n",
+                _mTypeName, _mRows * _mColumns, _mBaseType);
             constructorStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             constructorStr.Append("\t\tpublic ");
-            constructorStr.Append(m_TypeName);
+            constructorStr.Append(_mTypeName);
             constructorStr.Append("(");
-            mathStr.AppendFormat("\t\t/// <summary>Returns a {0} matrix constructed from from {1} {2} values given in row-major order.</summary>\n", m_TypeName, m_Rows * m_Columns, m_BaseType);
+            mathStr.AppendFormat(
+                "\t\t/// <summary>Returns a {0} matrix constructed from from {1} {2} values given in row-major order.</summary>\n",
+                _mTypeName, _mRows * _mColumns, _mBaseType);
             mathStr.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
             mathStr.Append("\t\tpublic static ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append(" ");
-            mathStr.Append(m_TypeName);
+            mathStr.Append(_mTypeName);
             mathStr.Append("(");
-            string indent0 = new string(' ', m_TypeName.Length + 16);
-            string indent1 = new string(' ', m_TypeName.Length*2 + 24);
-            string indent2 = new string(' ', m_TypeName.Length + 24);
+            string indent0 = new string(' ', _mTypeName.Length + 16);
+            string indent1 = new string(' ', _mTypeName.Length * 2 + 24);
+            string indent2 = new string(' ', _mTypeName.Length + 24);
 
-            for (int row = 0; row < m_Rows; row++)
+            for (int row = 0; row < _mRows; row++)
             {
-                if(row != 0)
+                if (row != 0)
                 {
                     constructorStr.Append(indent0);
                     mathStr.Append(indent1);
                 }
-                for (int column = 0; column < m_Columns; column++)
+
+                for (int column = 0; column < _mColumns; column++)
                 {
                     string paramName = "m" + row + column;
-                    constructorStr.Append(m_BaseType);
+                    constructorStr.Append(_mBaseType);
                     constructorStr.Append(" ");
                     constructorStr.Append(paramName);
-                    mathStr.Append(m_BaseType);
+                    mathStr.Append(_mBaseType);
                     mathStr.Append(" ");
                     mathStr.Append(paramName);
 
                     //string separator = (row == m_Rows - 1) ? (column == m_Columns - 1) ? "," : ", " : ", ";
-                    string separator = (column == m_Columns - 1) ? (row == m_Rows - 1) ? ")\n" : ",\n" : ", ";
+                    string separator = (column == _mColumns - 1) ? (row == _mRows - 1) ? ")\n" : ",\n" : ", ";
                     constructorStr.Append(separator);
                     mathStr.Append(separator);
                 }
             }
-            
-            string columnType = ToTypeName(m_BaseType, m_Rows, 1);
+
+            string columnType = ToTypeName(_mBaseType, _mRows, 1);
 
             // constructor body
-            constructorStr.Append("\t\t{ ");
-            for (int column = 0; column < m_Columns; column++)
+            constructorStr.Append("\t\t{");
+            for (int column = 0; column < _mColumns; column++)
             {
-                constructorStr.AppendFormat("\n\t\t\tthis.{0} = new {1}(", matrixFields[column], columnType);
-                
-                for (int row = 0; row < m_Rows; row++)
+                constructorStr.AppendFormat("\n\t\t\tthis.{0} = new {1}(", MatrixFields[column], columnType);
+
+                for (int row = 0; row < _mRows; row++)
                 {
                     constructorStr.Append("m" + row + column);
-                    
-                    if (row != m_Rows - 1)
+
+                    if (row != _mRows - 1)
                     {
                         constructorStr.Append(", ");
                     }
@@ -1027,26 +1122,29 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
                 constructorStr.Append(");");
             }
+
             constructorStr.Append("\n\t\t}\n\n");
 
             // static constructor body
-            mathStr.AppendFormat("\t\t{{\n\t\t\treturn new {0}(", m_TypeName);
-            for (int row = 0; row < m_Rows; row++)
+            mathStr.AppendFormat("\t\t{{\n\t\t\treturn new {0}(", _mTypeName);
+            for (int row = 0; row < _mRows; row++)
             {
                 if (row != 0)
                 {
                     mathStr.Append(indent2);
                 }
-                for (int column = 0; column < m_Columns; column++)
+
+                for (int column = 0; column < _mColumns; column++)
                 {
                     string paramName = "m" + row + column;
                     mathStr.Append(paramName);
 
                     //string separator = (row == m_Rows - 1) ? (column == m_Columns - 1) ? "," : ", " : ", ";
-                    string separator = (column == m_Columns - 1) ? (row == m_Rows - 1) ? ");" : ",\n" : ", ";
+                    string separator = (column == _mColumns - 1) ? (row == _mRows - 1) ? ");" : ",\n" : ", ";
                     mathStr.Append(separator);
                 }
             }
+
             mathStr.Append("\n\t\t}\n\n");
         }
 
@@ -1058,76 +1156,75 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         public void GenerateConstructors(StringBuilder constructorStr, StringBuilder mathStr)
         {
-            if(m_Columns == 1)
+            if (_mColumns == 1)
             {
-                int[] parameterComponenets = new int[4];
-                GenerateVectorConstructors(m_Rows, m_Rows, 0, parameterComponenets, constructorStr, mathStr);
+                int[] parameterComponents = new int[4];
+                GenerateVectorConstructors(_mRows, 0, parameterComponents, constructorStr, mathStr);
             }
             else
             {
                 GenerateMatrixConstructors(constructorStr, mathStr);
             }
         }
-        
+
         public void GenerateOperators(StringBuilder str)
         {
-            string resultType = m_BaseType;
+            string resultType = _mBaseType;
             string resultBoolType = "bool";
-            
-            if (0 != (m_Features & Features.Arithmetic))
+
+            if (0 != (_mFeatures & Features.Arithmetic))
             {
-                GenerateBinaryOperator(m_Rows, m_Columns, "*", resultType, str, "multiplication");
+                GenerateBinaryOperator(_mRows, _mColumns, "*", resultType, str, "multiplication");
 
-                GenerateBinaryOperator(m_Rows, m_Columns, "+", resultType, str, "addition");
+                GenerateBinaryOperator(_mRows, _mColumns, "+", resultType, str, "addition");
 
-                GenerateBinaryOperator(m_Rows, m_Columns, "-", resultType, str, "subtraction");
+                GenerateBinaryOperator(_mRows, _mColumns, "-", resultType, str, "subtraction");
 
-                GenerateBinaryOperator(m_Rows, m_Columns, "/", resultType, str, "division");
+                GenerateBinaryOperator(_mRows, _mColumns, "/", resultType, str, "division");
 
-                GenerateBinaryOperator(m_Rows, m_Columns, "%", resultType, str, "modulus");
+                GenerateBinaryOperator(_mRows, _mColumns, "%", resultType, str, "modulus");
 
                 GenerateUnaryOperator("++", str, "increment");
 
                 GenerateUnaryOperator("--", str, "decrement");
 
-                GenerateBinaryOperator(m_Rows, m_Columns, "<", resultBoolType, str, "less than");
-                GenerateBinaryOperator(m_Rows, m_Columns, "<=", resultBoolType, str, "less or equal");
+                GenerateBinaryOperator(_mRows, _mColumns, "<", resultBoolType, str, "less than");
+                GenerateBinaryOperator(_mRows, _mColumns, "<=", resultBoolType, str, "less or equal");
 
-                GenerateBinaryOperator(m_Rows, m_Columns, ">", resultBoolType, str, "greater than");
-                GenerateBinaryOperator(m_Rows, m_Columns, ">=", resultBoolType, str, "greater or equal");
+                GenerateBinaryOperator(_mRows, _mColumns, ">", resultBoolType, str, "greater than");
+                GenerateBinaryOperator(_mRows, _mColumns, ">=", resultBoolType, str, "greater or equal");
             }
 
-            if (0 != (m_Features & Features.UnaryNegation))
+            if (0 != (_mFeatures & Features.UnaryNegation))
             {
                 GenerateUnaryOperator("-", str, "unary minus");
                 GenerateUnaryOperator("+", str, "unary plus");
             }
 
-            if (0 != (m_Features & Features.Shifts))
+            if (0 != (_mFeatures & Features.Shifts))
             {
-                GenerateShiftOperator(m_Rows, "<<", resultType, str, "left shift");
-                GenerateShiftOperator(m_Rows, ">>", resultType, str, "right shift");
+                GenerateShiftOperator(_mRows, "<<", str, "left shift");
+                GenerateShiftOperator(_mRows, ">>", str, "right shift");
             }
 
-            GenerateBinaryOperator(m_Rows, m_Columns, "==", resultBoolType, str, "equality");
-            GenerateBinaryOperator(m_Rows, m_Columns, "!=", resultBoolType, str, "not equal");
+            GenerateBinaryOperator(_mRows, _mColumns, "==", resultBoolType, str, "equality");
+            GenerateBinaryOperator(_mRows, _mColumns, "!=", resultBoolType, str, "not equal");
 
-            if (0 != (m_Features & Features.BitwiseComplement))
+            if (0 != (_mFeatures & Features.BitwiseComplement))
             {
                 GenerateUnaryOperator("~", str, "bitwise not");
             }
 
-            if(m_BaseType == "bool")
+            if (_mBaseType == "bool")
             {
                 GenerateUnaryOperator("!", str, "not");
             }
 
-            if (0 != (m_Features & Features.BitwiseLogic))
+            if (0 != (_mFeatures & Features.BitwiseLogic))
             {
-                GenerateBinaryOperator(m_Rows, m_Columns, "&", resultType, str, "bitwise and");
-                GenerateBinaryOperator(m_Rows, m_Columns, "|", resultType, str, "bitwise or");
-                GenerateBinaryOperator(m_Rows, m_Columns, "^", resultType, str, "bitwise exclusive or");
-
+                GenerateBinaryOperator(_mRows, _mColumns, "&", resultType, str, "bitwise and");
+                GenerateBinaryOperator(_mRows, _mColumns, "|", resultType, str, "bitwise or");
+                GenerateBinaryOperator(_mRows, _mColumns, "^", resultType, str, "bitwise exclusive or");
             }
         }
 
@@ -1140,31 +1237,34 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     str.Append(", ");
                 str.AppendFormat("0x{0:X}u", NextPrime());
             }
+
             str.Append(")");
         }
 
         public void GenerateTransposeFunction(StringBuilder str)
         {
-            if (m_Columns == 1 || m_Rows == 1)
+            if (_mColumns == 1 || _mRows == 1)
                 return;
 
-            string resultType = ToTypeName(m_BaseType, m_Columns, m_Rows);
-            str.AppendFormat("\t\t/// <summary>Return the {0} transpose of a {1} matrix.</summary>\n", resultType, m_TypeName);
+            string resultType = ToTypeName(_mBaseType, _mColumns, _mRows);
+            str.AppendFormat("\t\t/// <summary>Return the {0} transpose of a {1} matrix.</summary>\n", resultType,
+                _mTypeName);
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic static {0} transpose({1} v)\n", resultType, m_TypeName);
+            str.AppendFormat("\t\tpublic static {0} transpose({1} v)\n", resultType, _mTypeName);
             str.Append("\t\t{\n");
 
             str.AppendFormat("\t\t\treturn {0}(\n", resultType);
-            for(int i = 0; i < m_Columns; i++)
+            for (int i = 0; i < _mColumns; i++)
             {
                 str.Append("\t\t\t\t");
-                for(int j = 0; j < m_Rows; j++)
+                for (int j = 0; j < _mRows; j++)
                 {
                     if (j != 0)
                         str.Append(", ");
-                    str.AppendFormat("v.c{0}.{1}", i, vectorFields[j]);
+                    str.AppendFormat("v.c{0}.{1}", i, VectorFields[j]);
                 }
-                if(i != m_Columns - 1)
+
+                if (i != _mColumns - 1)
                     str.Append(",\n");
             }
 
@@ -1174,15 +1274,15 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         public void GenerateInverseFunction(StringBuilder str)
         {
-            if (m_Rows != m_Columns || m_Rows == 1)
+            if (_mRows != _mColumns || _mRows == 1)
                 return;
 
-            if (m_BaseType != "float" && m_BaseType != "double")
+            if (_mBaseType != "float" && _mBaseType != "double" && _mBaseType != "Fp")
                 return;
 
-            string oneStr = ToTypedLiteral(m_BaseType, 1);
+            string oneStr = ToTypedLiteral(_mBaseType, 1);
 
-            if(m_Rows == 2)
+            if (_mRows == 2)
             {
                 str.AppendFormat(
                     @"        /// <summary>Returns the {0}2x2 full inverse of a {0}2x2 matrix.</summary>
@@ -1194,15 +1294,16 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {0} c = m.c0.y;
             {0} d = m.c1.y;
 
-            {0} det = a * d - b * c;
+            // ** NOTE:忽略计算过程中产生的极小值
+            {0} det = IgnoreTooSmallNumber(a * d) - IgnoreTooSmallNumber(b * c);
 
-            return {0}2x2(d, -b, -c, a) * ({1} / det);
+            return IgnoreTooSmallNumber({0}2x2(d, -b, -c, a) * ({1} / det));
         }}
 
 ",
-                    m_BaseType, oneStr);
+                    _mBaseType, oneStr);
             }
-            else if(m_Rows == 3)
+            else if (_mRows == 3)
             {
                 str.AppendFormat(
                     @"        /// <summary>Returns the {0}3x3 full inverse of a {0}3x3 matrix.</summary>
@@ -1216,18 +1317,19 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {0}3 t1 = {0}3(c1.y, c2.y, c0.y);
             {0}3 t2 = {0}3(c1.z, c2.z, c0.z);
 
-            {0}3 m0 = t1 * t2.yzx - t1.yzx * t2;
+            // ** NOTE:忽略计算过程中产生的极小值
+            {0}3 m0 = IgnoreTooSmallNumber(t1 * t2.yzx) - IgnoreTooSmallNumber(t1.yzx * t2);
             {0}3 m1 = t0.yzx * t2 - t0 * t2.yzx;
             {0}3 m2 = t0 * t1.yzx - t0.yzx * t1;
 
-            {0} rcpDet = {1} / csum(t0.zxy * m0);
-            return {0}3x3(m0, m1, m2) * rcpDet;
+            {0} rcpDet = {1} / csum(IgnoreTooSmallNumber(t0.zxy * m0));
+            return IgnoreTooSmallNumber({0}3x3(m0, m1, m2) * rcpDet);
         }}
 
 ",
-                m_BaseType, oneStr);
+                    _mBaseType, oneStr);
             }
-            else if(m_Rows == 4)
+            else if (_mRows == 4)
             {
                 str.AppendFormat(
                     @"        /// <summary>Returns the {0}4x4 full inverse of a {0}4x4 matrix.</summary>
@@ -1254,10 +1356,11 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {0}4 r3_wzyx = shuffle(r2z_r3z_r2w_r3w, r2y_r3y_r2x_r3x, ShuffleComponent.LeftW, ShuffleComponent.LeftY, ShuffleComponent.RightY, ShuffleComponent.RightW);
             {0}4 r0_xyzw = shuffle(r0y_r1y_r0x_r1x, r0z_r1z_r0w_r1w, ShuffleComponent.LeftZ, ShuffleComponent.LeftX, ShuffleComponent.RightX, ShuffleComponent.RightZ);
 
+            // ** NOTE:忽略计算过程中产生的极小值
             // Calculate remaining inner term pairs. inner terms have zw=-xy, so we only have to calculate xy and can pack two pairs per vector.
-            {0}4 inner12_23 = r1y_r2y_r1x_r2x * r2z_r3z_r2w_r3w - r1z_r2z_r1w_r2w * r2y_r3y_r2x_r3x;
-            {0}4 inner02_13 = r0y_r1y_r0x_r1x * r2z_r3z_r2w_r3w - r0z_r1z_r0w_r1w * r2y_r3y_r2x_r3x;
-            {0}4 inner30_01 = r3z_r0z_r3w_r0w * r0y_r1y_r0x_r1x - r3y_r0y_r3x_r0x * r0z_r1z_r0w_r1w;
+            {0}4 inner12_23 = IgnoreTooSmallNumber(r1y_r2y_r1x_r2x * r2z_r3z_r2w_r3w) - IgnoreTooSmallNumber(r1z_r2z_r1w_r2w * r2y_r3y_r2x_r3x);
+            {0}4 inner02_13 = IgnoreTooSmallNumber(r0y_r1y_r0x_r1x * r2z_r3z_r2w_r3w) - IgnoreTooSmallNumber(r0z_r1z_r0w_r1w * r2y_r3y_r2x_r3x);
+            {0}4 inner30_01 = IgnoreTooSmallNumber(r3z_r0z_r3w_r0w * r0y_r1y_r0x_r1x) - IgnoreTooSmallNumber(r3y_r0y_r3x_r0x * r0z_r1z_r0w_r1w);
 
             // Expand inner terms back to 4 components. zw signs still need to be flipped
             {0}4 inner12 = shuffle(inner12_23, inner12_23, ShuffleComponent.LeftX, ShuffleComponent.LeftZ, ShuffleComponent.RightZ, ShuffleComponent.RightX);
@@ -1267,47 +1370,43 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {0}4 inner13 = shuffle(inner02_13, inner02_13, ShuffleComponent.LeftY, ShuffleComponent.LeftW, ShuffleComponent.RightW, ShuffleComponent.RightY);
 
             // Calculate minors
-            {0}4 minors0 = r3_wzyx * inner12 - r2_wzyx * inner13 + r1_wzyx * inner23;
+            {0}4 minors0 = IgnoreTooSmallNumber(r3_wzyx * inner12) - IgnoreTooSmallNumber(r2_wzyx * inner13) + IgnoreTooSmallNumber(r1_wzyx * inner23);
 
-            {0}4 denom = r0_xyzw * minors0;
+            {0}4 denominator = IgnoreTooSmallNumber(r0_xyzw * minors0);
 
             // Horizontal sum of denominator. Free sign flip of z and w compensates for missing flip in inner terms.
-            denom = denom + shuffle(denom, denom, ShuffleComponent.LeftY, ShuffleComponent.LeftX, ShuffleComponent.RightW, ShuffleComponent.RightZ);   // x+y		x+y			z+w			z+w
-            denom = denom - shuffle(denom, denom, ShuffleComponent.LeftZ, ShuffleComponent.LeftZ, ShuffleComponent.RightX, ShuffleComponent.RightX);   // x+y-z-w  x+y-z-w		z+w-x-y		z+w-x-y
+            denominator = denominator + shuffle(denominator, denominator, ShuffleComponent.LeftY, ShuffleComponent.LeftX, ShuffleComponent.RightW, ShuffleComponent.RightZ);   // x+y		x+y			z+w			z+w
+            denominator = denominator - shuffle(denominator, denominator, ShuffleComponent.LeftZ, ShuffleComponent.LeftZ, ShuffleComponent.RightX, ShuffleComponent.RightX);   // x+y-z-w  x+y-z-w		z+w-x-y		z+w-x-y
 
-            {0}4 rcp_denom_ppnn = {0}4({1}) / denom;
+            {0}4 rcp_denominator_ppnn = {0}4({1}) / denominator;
             {0}4x4 res;
-            res.c0 = minors0 * rcp_denom_ppnn;
+            res.c0 = IgnoreTooSmallNumber(minors0 * rcp_denominator_ppnn);
 
             {0}4 inner30 = shuffle(inner30_01, inner30_01, ShuffleComponent.LeftX, ShuffleComponent.LeftZ, ShuffleComponent.RightZ, ShuffleComponent.RightX);
             {0}4 inner01 = shuffle(inner30_01, inner30_01, ShuffleComponent.LeftY, ShuffleComponent.LeftW, ShuffleComponent.RightW, ShuffleComponent.RightY);
 
             {0}4 minors1 = r2_wzyx * inner30 - r0_wzyx * inner23 - r3_wzyx * inner02;
-            res.c1 = minors1 * rcp_denom_ppnn;
+            res.c1 = IgnoreTooSmallNumber(minors1 * rcp_denominator_ppnn);
 
             {0}4 minors2 = r0_wzyx * inner13 - r1_wzyx * inner30 - r3_wzyx * inner01;
-            res.c2 = minors2 * rcp_denom_ppnn;
+            res.c2 = IgnoreTooSmallNumber(minors2 * rcp_denominator_ppnn);
 
             {0}4 minors3 = r1_wzyx * inner02 - r0_wzyx * inner12 + r2_wzyx * inner01;
-            res.c3 = minors3 * rcp_denom_ppnn;
+            res.c3 = IgnoreTooSmallNumber(minors3 * rcp_denominator_ppnn);
             return res;
         }}
 
 ",
-                    m_BaseType, oneStr);
+                    _mBaseType, oneStr);
             }
-
         }
 
         public void GenerateFastInverseFunction(StringBuilder str)
         {
-            if (m_BaseType != "float" && m_BaseType != "double")
+            if (_mBaseType != "float" && _mBaseType != "double" && _mBaseType != "Fp")
                 return;
 
-            string zeroStr = ToTypedLiteral(m_BaseType, 0);
-            string oneStr = ToTypedLiteral(m_BaseType, 1);
-
-            if(m_Columns == 4 && m_Rows == 3)
+            if (_mColumns == 4 && _mRows == 3)
             {
                 str.AppendFormat(
                     @"        // Fast matrix inverse for rigid transforms (Orthonormal basis and translation)
@@ -1328,9 +1427,9 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         }}
 
 ",
-                    m_BaseType);
-
-            } else if(m_Columns == 4 && m_Rows == 4)
+                    _mBaseType);
+            }
+            else if (_mColumns == 4 && _mRows == 4)
             {
                 str.AppendFormat(
                     @"        // Fast matrix inverse for rigid transforms (Orthonormal basis and translation)
@@ -1353,27 +1452,25 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {0}4 r2 = unpacklo(t2, t3);
 
             pos = -(r0 * pos.x + r1 * pos.y + r2 * pos.z);
-            pos.w = 1.0f;
+            pos.w = 1;
 
             return {0}4x4(r0, r1, r2, pos);
         }}
 
-",
-                    m_BaseType, zeroStr, oneStr);
+", _mBaseType);
             }
-
         }
 
 
         public void GenerateDeterminantFunction(StringBuilder str)
         {
-            if (m_Rows != m_Columns || m_Rows == 1)
+            if (_mRows != _mColumns || _mRows == 1)
                 return;
 
-            if (m_BaseType != "float" && m_BaseType != "double" && m_BaseType != "int")
+            if (_mBaseType != "float" && _mBaseType != "double" && _mBaseType != "int" && _mBaseType != "Fp")
                 return;
 
-            if (m_Rows == 2)
+            if (_mRows == 2)
             {
                 str.AppendFormat(
                     @"        /// <summary>Returns the determinant of a {0}2x2 matrix.</summary>
@@ -1389,9 +1486,9 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         }}
 
 ",
-                    m_BaseType);
+                    _mBaseType);
             }
-            else if (m_Rows == 3)
+            else if (_mRows == 3)
             {
                 str.AppendFormat(
                     @"        /// <summary>Returns the determinant of a {0}3x3 matrix.</summary>
@@ -1410,9 +1507,9 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         }}
 
 ",
-                m_BaseType);
+                    _mBaseType);
             }
-            else if (m_Rows == 4)
+            else if (_mRows == 4)
             {
                 str.AppendFormat(
                     @"        /// <summary>Returns the determinant of a {0}4x4 matrix.</summary>
@@ -1432,134 +1529,151 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         }}
 
 ",
-                    m_BaseType);
+                    _mBaseType);
             }
-
         }
 
 
         public void GenerateHashFunction(StringBuilder str, bool wide)
         {
-            string returnType = wide ? ToTypeName("uint", m_Rows, 1) : "uint";
+            if (_mBaseType == "ulong")
+                return;
+            string returnType = wide ? ToTypeName("uint", _mRows, 1) : "uint";
             string functionName = wide ? "hashwide" : "hash";
 
-            if(wide)
+            if (wide)
             {
                 str.AppendFormat("\t\t/// <summary>\n" +
-                            "\t\t/// Returns a {0} vector hash code of a {1} vector.\n" +
-                            "\t\t/// When multiple elements are to be hashes together, it can more efficient to calculate and combine wide hash\n" +
-                            "\t\t/// that are only reduced to a narrow uint hash at the very end instead of at every step.\n" +
-                            "\t\t/// </summary>\n", returnType, m_TypeName);
+                                 "\t\t/// Returns a {0} vector hash code of a {1} vector.\n" +
+                                 "\t\t/// When multiple elements are to be hashes together, it can more efficient to calculate and combine wide hash\n" +
+                                 "\t\t/// that are only reduced to a narrow uint hash at the very end instead of at every step.\n" +
+                                 "\t\t/// </summary>\n", returnType, _mTypeName);
             }
             else
             {
-                str.AppendFormat("\t\t/// <summary>Returns a uint hash code of a {0} vector.</summary>\n", m_TypeName);
+                str.AppendFormat("\t\t/// <summary>Returns a uint hash code of a {0} vector.</summary>\n", _mTypeName);
             }
 
 
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic static {0} {1}({2} v)\n", returnType, functionName, m_TypeName);
+            str.AppendFormat("\t\tpublic static {0} {1}({2} v)\n", returnType, functionName, _mTypeName);
             str.Append("\t\t{\n");
 
             str.AppendFormat("\t\t\treturn ");
-            str.Append(wide ? "(" : "math.csum(");
-            
-            if (m_BaseType == "bool")
+            str.Append(wide ? "(" : "csum(");
+
+            if (_mBaseType == "bool")
             {
-                for (int column = 0; column < m_Columns; column++)
+                for (int column = 0; column < _mColumns; column++)
                 {
                     if (column > 0)
                         str.Append(wide ? " + \n\t\t\t\t\t" : " + \n\t\t\t\t\t\t");
 
                     str.Append("select(");
-                    GeneratePrimeUIntVector(str, m_Rows);
+                    GeneratePrimeUIntVector(str, _mRows);
                     str.Append(", ");
-                    GeneratePrimeUIntVector(str, m_Rows);
+                    GeneratePrimeUIntVector(str, _mRows);
                     str.Append(", ");
-                    str.Append(m_Columns > 1 ? "v.c" + column : "v");
+                    str.Append(_mColumns > 1 ? "v.c" + column : "v");
                     str.Append(")");
                 }
+
                 str.AppendFormat(");\n");
             }
             else
             {
-                for(int column = 0; column < m_Columns; column++)
+                for (int column = 0; column < _mColumns; column++)
                 {
-                    if(column > 0)
-                        str.Append(wide ? " + \n\t\t\t\t\t" : " + \n\t\t\t\t\t\t");
-                    string columnName = m_Columns > 1 ? "v.c" + column : "v";
-                    if (m_BaseType != "uint")
+                    if (column > 0)
+                        str.Append(wide ? " +\n\t\t\t\t\t" : " +\n\t\t\t\t\t\t");
+                    string columnName = _mColumns > 1 ? "v.c" + column : "v";
+                    if (_mBaseType != "uint")
                     {
-                        if(m_BaseType == "double")
+                        if (_mBaseType == "double")
                             columnName = "fold_to_uint(" + columnName + ")";
-                        else if(m_BaseType == "half")
+                        else if (_mBaseType == "half")
                         {
-                            if (m_Rows == 1)
+                            if (_mRows == 1)
                                 columnName = "v.value";
-                            else if(m_Rows == 2)
-                                columnName = "fpmath.uint2(v.x.value, v.y.value)";
-                            else if (m_Rows == 3)
-                                columnName = "fpmath.uint3(v.x.value, v.y.value, v.z.value)";
-                            else if (m_Rows == 4)
-                                columnName = "fpmath.uint4(v.x.value, v.y.value, v.z.value, v.w.value)";
+                            else if (_mRows == 2)
+                                columnName = "MathFp.uint2(v.x.value, v.y.value)";
+                            else if (_mRows == 3)
+                                columnName = "MathFp.uint3(v.x.value, v.y.value, v.z.value)";
+                            else if (_mRows == 4)
+                                columnName = "MathFp.uint4(v.x.value, v.y.value, v.z.value, v.w.value)";
                         }
                         else
-                            columnName = "fpmath.asuint(" + columnName + ")";
+                            columnName = "asuint(" + columnName + ")";
                     }
-                        
+
                     str.Append(columnName);
                     str.Append(" * ");
-                    GeneratePrimeUIntVector(str, m_Rows);
+                    GeneratePrimeUIntVector(str, _mRows);
                 }
+
                 str.AppendFormat(") + 0x{0:X}u;\n", NextPrime());
             }
-            
+
             str.Append("\t\t}\n\n");
         }
 
         public void GenerateToStringFunction(StringBuilder str, bool useFormat)
         {
-            if(useFormat)
-                str.AppendFormat("\t\t/// <summary>Returns a string representation of the {0} using a specified format and culture-specific format information.</summary>\n", m_TypeName);
+            // ** 这三个类型的 tostring 在外部自定义，不使用生成的
+
+            if (_mTypeName == "Fp4" || _mTypeName == "Fp3" || _mTypeName == "Fp2")
+            {
+                return;
+            }
+
+            if (useFormat)
+                str.AppendFormat(
+                    "\t\t/// <summary>Returns a string representation of the {0} using a specified format and culture-specific format information.</summary>\n",
+                    _mTypeName);
             else
-                str.AppendFormat("\t\t/// <summary>Returns a string representation of the {0}.</summary>\n", m_TypeName);
+                str.AppendFormat("\t\t/// <summary>Returns a string representation of the {0}.</summary>\n",
+                    _mTypeName);
 
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            if(useFormat)
+            if (useFormat)
                 str.Append("\t\tpublic string ToString(string format, IFormatProvider formatProvider)\n\t\t{\n");
             else
                 str.Append("\t\tpublic override string ToString()\n\t\t{\n");
 
-            str.AppendFormat("\t\t\treturn string.Format(\"{0}(", m_TypeName);
-            for (int row = 0; row < m_Rows; row++)
+            str.AppendFormat("\t\t\treturn string.Format(\"{0}(", _mTypeName);
+
+
+            for (int row = 0; row < _mRows; row++)
             {
-                for (int column = 0; column < m_Columns; column++)
+                for (int column = 0; column < _mColumns; column++)
                 {
-                    int idx = row * m_Columns + column;
+                    int idx = row * _mColumns + column;
                     if (idx > 0)
                     {
                         str.Append(", ");
-                        if (m_Columns > 1 && column == 0)
+                        if (_mColumns > 1 && column == 0)
                             str.Append(" ");
                     }
+
                     str.AppendFormat("{{{0}}}", idx);
-                    if (m_BaseType == "float")
+                    if (_mBaseType == "float")
                         str.Append("f");
                 }
             }
+
             str.Append(")\", ");
-            
-            for (int row = 0; row < m_Rows; row++)
+
+            for (int row = 0; row < _mRows; row++)
             {
-                for (int column = 0; column < m_Columns; column++)
+                for (int column = 0; column < _mColumns; column++)
                 {
-                    int idx = row * m_Columns + column;
+                    int idx = row * _mColumns + column;
                     if (idx > 0)
                         str.Append(", ");
-                    if(m_Columns > 1)
-                        str.Append(matrixFields[column] + "." + vectorFields[row]);
+                    if (_mColumns > 1)
+                        str.Append(MatrixFields[column] + "." + VectorFields[row]);
                     else
-                        str.Append(vectorFields[row]);
+                        str.Append(VectorFields[row]);
                     if (useFormat)
                         str.Append(".ToString(format, formatProvider)");
                 }
@@ -1569,7 +1683,8 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             str.Append("\t\t}\n\n");
         }
 
-        void GenerateBinaryOperator(int rows, int columns, string op, string resultType, StringBuilder str, string opDesc)
+        void GenerateBinaryOperator(int rows, int columns, string op, string resultType, StringBuilder str,
+            string opDesc)
         {
             GenerateBinaryOperator(rows, columns, rows, columns, op, resultType, rows, columns, str, opDesc);
             GenerateBinaryOperator(rows, columns, 1, 1, op, resultType, rows, columns, str, opDesc);
@@ -1577,19 +1692,27 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             str.Append("\n");
         }
 
-        void GenerateBinaryOperator(int lhsRows, int lhsColumns, int rhsRows, int rhsColumns, string op, string resultType, int resultRows, int resultColumns, StringBuilder str, string opDesc)
+        void GenerateBinaryOperator(int lhsRows, int lhsColumns, int rhsRows, int rhsColumns, string op,
+            string resultType, int resultRows, int resultColumns, StringBuilder str, string opDesc)
         {
-            if(lhsRows == rhsRows && lhsColumns == rhsColumns)
-                str.AppendFormat("\t\t/// <summary>Returns the result of a componentwise {0} operation on {1}.</summary>\n", opDesc, ToValueDescription(m_BaseType, lhsRows, lhsColumns, 2));
+            if (lhsRows == rhsRows && lhsColumns == rhsColumns)
+                str.AppendFormat(
+                    "\t\t/// <summary>Returns the result of a componentwise {0} operation on {1}.</summary>\n", opDesc,
+                    ToValueDescription(_mBaseType, lhsRows, lhsColumns, 2));
             else
-                str.AppendFormat("\t\t/// <summary>Returns the result of a componentwise {0} operation on {1} and {2}.</summary>\n", opDesc, ToValueDescription(m_BaseType, lhsRows, lhsColumns, 1), ToValueDescription(m_BaseType, rhsRows, rhsColumns, 1));
+                str.AppendFormat(
+                    "\t\t/// <summary>Returns the result of a componentwise {0} operation on {1} and {2}.</summary>\n",
+                    opDesc, ToValueDescription(_mBaseType, lhsRows, lhsColumns, 1),
+                    ToValueDescription(_mBaseType, rhsRows, rhsColumns, 1));
 
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic static {0} operator {1} ({2} lhs, {3} rhs)", ToTypeName(resultType, resultRows, resultColumns), op, ToTypeName(m_BaseType, lhsRows, lhsColumns), ToTypeName(m_BaseType, rhsRows, rhsColumns));
+            str.AppendFormat("\t\tpublic static {0} operator {1} ({2} lhs, {3} rhs)",
+                ToTypeName(resultType, resultRows, resultColumns), op, ToTypeName(_mBaseType, lhsRows, lhsColumns),
+                ToTypeName(_mBaseType, rhsRows, rhsColumns));
             str.Append(" { ");
             str.AppendFormat("return new {0} (", ToTypeName(resultType, resultRows, resultColumns));
 
-            string[] fields = (resultColumns > 1) ? matrixFields : vectorFields;
+            string[] fields = (resultColumns > 1) ? MatrixFields : VectorFields;
             int resultCount = (resultColumns > 1) ? resultColumns : resultRows;
 
             for (int i = 0; i < resultCount; i++)
@@ -1631,8 +1754,8 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         void GenerateIndexOperator(StringBuilder str, IndexerMode mode)
         {
-            int count = m_Columns > 1 ? m_Columns : m_Rows;
-            string returnType = ToTypeName(m_BaseType, m_Columns > 1 ? m_Rows : 1, 1);
+            int count = _mColumns > 1 ? _mColumns : _mRows;
+            string returnType = ToTypeName(_mBaseType, _mColumns > 1 ? _mRows : 1, 1);
 
             var refPrefix = mode == IndexerMode.ByRef ? "ref " : "";
 
@@ -1643,13 +1766,14 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             str.AppendLine("\t\t\t{");
             str.AppendLine("#if ENABLE_UNITY_COLLECTIONS_CHECKS");
             str.AppendFormat("\t\t\t\tif ((uint)index >= {0})\n", count);
-            str.AppendFormat("\t\t\t\t\tthrow new System.ArgumentException(\"index must be between[0...{0}]\");\n", count - 1);
+            str.AppendFormat("\t\t\t\t\tthrow new System.ArgumentException(\"index must be between[0...{0}]\");\n",
+                count - 1);
             str.AppendLine("#endif");
             // To workaround an undefined behavior with taking the fixed address of a struct field (that could be allocated on the stack)
             // we are fixing this instead of a field
             // See issue https://github.com/dotnet/coreclr/issues/16210
             str.Append("\t\t\t\tfixed (");
-            str.Append(m_TypeName);
+            str.Append(_mTypeName);
             str.AppendFormat("* array = &this) {{ return {0}((", refPrefix);
             str.Append(returnType);
             str.Append("*)array)[index]; }\n");
@@ -1661,64 +1785,71 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 str.AppendLine("\t\t\t{");
                 str.AppendLine("#if ENABLE_UNITY_COLLECTIONS_CHECKS");
                 str.AppendFormat("\t\t\t\tif ((uint)index >= {0})\n", count);
-                str.AppendFormat("\t\t\t\t\tthrow new System.ArgumentException(\"index must be between[0...{0}]\");\n", count - 1);
+                str.AppendFormat("\t\t\t\t\tthrow new System.ArgumentException(\"index must be between[0...{0}]\");\n",
+                    count - 1);
                 str.AppendLine("#endif");
                 str.Append("\t\t\t\tfixed (");
                 str.Append(returnType);
                 str.Append("* array = &");
-                str.Append(m_Columns > 1 ? "c0" : "x");
+                str.Append(_mColumns > 1 ? "c0" : "x");
                 str.Append(") { array[index] = value; }\n");
                 str.AppendLine("\t\t\t}");
             }
 
             str.AppendLine("\t\t}");
-
         }
 
         void GenerateEquals(StringBuilder str)
         {
-            string[] fields = (m_Columns > 1) ? matrixFields : vectorFields;
-            int resultCount = (m_Columns > 1) ? m_Columns : m_Rows;
+            string[] fields = (_mColumns > 1) ? MatrixFields : VectorFields;
+            int resultCount = (_mColumns > 1) ? _mColumns : _mRows;
 
-            str.AppendFormat("\t\t/// <summary>Returns true if the {0} is equal to a given {0}, false otherwise.</summary>\n", m_TypeName);
+            str.AppendFormat(
+                "\t\t/// <summary>Returns true if the {0} is equal to a given {0}, false otherwise.</summary>\n",
+                _mTypeName);
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic bool Equals({0} rhs) {{ return ", m_TypeName);
-            
+            str.AppendFormat("\t\tpublic bool Equals({0} rhs) {{ return ", _mTypeName);
+
             for (int i = 0; i < resultCount; i++)
             {
-                if (m_Columns == 1)
+                if (_mColumns == 1)
                     str.AppendFormat("{0} == rhs.{0}", fields[i]);
                 else
                     str.AppendFormat("{0}.Equals(rhs.{0})", fields[i]);
-                if (i != resultCount-1)
+                if (i != resultCount - 1)
                     str.Append(" && ");
             }
 
             str.Append("; }\n\n");
 
-            str.AppendFormat("\t\t/// <summary>Returns true if the {0} is equal to a given {0}, false otherwise.</summary>\n", m_TypeName);
-            str.AppendFormat("\t\tpublic override bool Equals(object o) {{ return Equals(({0})o); }}\n\n", m_TypeName);
+            str.AppendFormat(
+                "\t\t/// <summary>Returns true if the {0} is equal to a given {0}, false otherwise.</summary>\n",
+                _mTypeName);
+            str.AppendFormat("\t\tpublic override bool Equals(object o) {{ return Equals(({0})o); }}\n\n", _mTypeName);
         }
 
         void GenerateGetHashCode(StringBuilder str)
         {
-            str.AppendFormat("\t\t/// <summary>Returns a hash code for the {0}.</summary>\n", m_TypeName);
+            if (_mBaseType == "ulong")
+                return;
+            str.AppendFormat("\t\t/// <summary>Returns a hash code for the {0}.</summary>\n", _mTypeName);
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.Append("\t\tpublic override int GetHashCode() { return (int)fpmath.hash(this); }\n\n");
+            str.Append("\t\tpublic override int GetHashCode() { return (int)MathFp.hash(this); }\n\n");
         }
 
 
-        void GenerateShiftOperator(int lhsRows, string op, string resultBaseType, StringBuilder str, string opDesc)
+        void GenerateShiftOperator(int lhsRows, string op, StringBuilder str, string opDesc)
         {
-            string[] fields = (m_Columns > 1) ? matrixFields : vectorFields;
-            int resultCount = (m_Columns > 1) ? m_Columns : m_Rows;
+            string[] fields = (_mColumns > 1) ? MatrixFields : VectorFields;
+            int resultCount = (_mColumns > 1) ? _mColumns : _mRows;
 
-            string resultType = ToTypeName(resultBaseType, resultCount, 1);
-            str.AppendFormat("\t\t/// <summary>Returns the result of a componentwise {0} operation on {1} by a number of bits specified by a single int.</summary>\n", opDesc, ToValueDescription(m_BaseType, m_Rows, m_Columns, 1));
+            str.AppendFormat(
+                "\t\t/// <summary>Returns the result of a componentwise {0} operation on {1} by a number of bits specified by a single int.</summary>\n",
+                opDesc, ToValueDescription(_mBaseType, _mRows, _mColumns, 1));
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic static {0} operator {1} ({0} x, int n)", m_TypeName, op);
+            str.AppendFormat("\t\tpublic static {0} operator {1} ({0} x, int n)", _mTypeName, op);
             str.Append(" { ");
-            str.AppendFormat("return new {0} (", m_TypeName);
+            str.AppendFormat("return new {0} (", _mTypeName);
 
             for (int i = 0; i < resultCount; i++)
             {
@@ -1742,18 +1873,19 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         void GenerateUnaryOperator(string op, StringBuilder str, string opDesc)
         {
-            str.AppendFormat("\t\t/// <summary>Returns the result of a componentwise {0} operation on {1}.</summary>\n", opDesc, ToValueDescription(m_BaseType, m_Rows, m_Columns, 1));
+            str.AppendFormat("\t\t/// <summary>Returns the result of a componentwise {0} operation on {1}.</summary>\n",
+                opDesc, ToValueDescription(_mBaseType, _mRows, _mColumns, 1));
             str.Append("\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
-            str.AppendFormat("\t\tpublic static {0} operator {1} ({0} val)", m_TypeName, op);
+            str.AppendFormat("\t\tpublic static {0} operator {1} ({0} val)", _mTypeName, op);
             str.Append(" { ");
-            str.AppendFormat("return new {0} (", m_TypeName);
+            str.AppendFormat("return new {0} (", _mTypeName);
 
-            string[] fields = (m_Columns > 1) ? matrixFields : vectorFields;
-            int resultCount = (m_Columns > 1) ? m_Columns : m_Rows;
+            string[] fields = (_mColumns > 1) ? MatrixFields : VectorFields;
+            int resultCount = (_mColumns > 1) ? _mColumns : _mRows;
 
             for (int i = 0; i < resultCount; i++)
             {
-                if(op == "-" && m_BaseType == "uint" && m_Columns == 1)
+                if (op == "-" && _mBaseType == "uint" && _mColumns == 1)
                     str.AppendFormat("(uint){0}val.{1}", op, fields[i]);
                 else
                     str.AppendFormat("{0}val.{1}", op, fields[i]);
@@ -1766,7 +1898,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         void GenerateSwizzles(StringBuilder str)
         {
-            int count = m_Rows;
+            int count = _mRows;
             // float4 swizzles
             {
                 int[] swizzles = new int[4];
@@ -1838,17 +1970,14 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 bits |= 1 << swizzle[i];
             }
 
-            bool hideAutoComplete = true;
-
-            if (hideAutoComplete)
-                str.Append("\t\t[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]\n");
-
+            str.Append(
+                "\t\t[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]\n");
             str.Append("\t\tpublic ");
-            str.Append(ToTypeName(m_BaseType, swizzle.Length, 1));
+            str.Append(ToTypeName(_mBaseType, swizzle.Length, 1));
             str.Append(' ');
 
             for (int i = 0; i < swizzle.Length; i++)
-                str.Append(components[swizzle[i]]);
+                str.Append(Components[swizzle[i]]);
 
             // Getter
 
@@ -1857,7 +1986,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             {
                 str.AppendFormat("\n\t\t\t[MethodImpl(MethodImplOptions.AggressiveInlining)]");
                 str.Append("\n\t\t\tget { return new ");
-                str.Append(ToTypeName(m_BaseType, swizzle.Length, 1));
+                str.Append(ToTypeName(_mBaseType, swizzle.Length, 1));
                 str.Append('(');
             }
             else
@@ -1865,7 +1994,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
             for (int i = 0; i < swizzle.Length; i++)
             {
-                str.Append(components[swizzle[i]]);
+                str.Append(Components[swizzle[i]]);
 
                 if (i != swizzle.Length - 1)
                     str.Append(", ");
@@ -1883,11 +2012,11 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 str.Append("\n\t\t\tset { ");
                 for (int i = 0; i < swizzle.Length; i++)
                 {
-                    str.Append(components[swizzle[i]]);
+                    str.Append(Components[swizzle[i]]);
                     if (swizzle.Length != 1)
                     {
                         str.Append(" = value.");
-                        str.Append(components[i]);
+                        str.Append(Components[i]);
                     }
                     else
                     {
@@ -1895,11 +2024,9 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     }
 
                     str.Append("; ");
-
                 }
 
                 str.Append("}");
-
             }
 
             str.Append("\n\t\t}\n\n");
@@ -1929,30 +2056,33 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         private void TestStaticFields(StringBuilder str)
         {
-            if (m_BaseType == "bool")
+            if (_mBaseType == "bool")
                 return;
 
-            if (m_Columns == 1)
+            if (_mColumns == 1)
             {
-                BeginTest(str, m_TypeName + "_zero");
-                for (int row = 0; row < m_Rows; row++)
-                    str.AppendFormat("\t\t\tTestUtils.AreEqual({0}.zero.{1}, {2});\n", m_TypeName, components[row], ToTypedLiteral(m_BaseType, 0));
+                BeginTest(str, _mTypeName + "_zero");
+                for (int row = 0; row < _mRows; row++)
+                    str.AppendFormat("\t\t\tTestUtils.AreEqual({0}.zero.{1}, {2});\n", _mTypeName, Components[row],
+                        ToTypedLiteral(_mBaseType, 0));
                 EndTest(str);
             }
             else
             {
-                BeginTest(str, m_TypeName + "_zero");
-                for(int column = 0; column < m_Columns; column++)
-                    for (int row = 0; row < m_Rows; row++)
-                        str.AppendFormat("\t\t\tTestUtils.AreEqual({0}.zero.c{1}.{2}, {3});\n", m_TypeName, column, components[row], ToTypedLiteral(m_BaseType, 0));
+                BeginTest(str, _mTypeName + "_zero");
+                for (int column = 0; column < _mColumns; column++)
+                for (int row = 0; row < _mRows; row++)
+                    str.AppendFormat("\t\t\tTestUtils.AreEqual({0}.zero.c{1}.{2}, {3});\n", _mTypeName, column,
+                        Components[row], ToTypedLiteral(_mBaseType, 0));
                 EndTest(str);
 
-                if(m_Columns == m_Rows)
+                if (_mColumns == _mRows)
                 {
-                    BeginTest(str, m_TypeName + "_identity");
-                    for (int column = 0; column < m_Columns; column++)
-                        for (int row = 0; row < m_Rows; row++)
-                            str.AppendFormat("\t\t\tTestUtils.AreEqual({0}.identity.c{1}.{2}, {3});\n", m_TypeName, column, components[row], ToTypedLiteral(m_BaseType, column == row ? 1 : 0));
+                    BeginTest(str, _mTypeName + "_identity");
+                    for (int column = 0; column < _mColumns; column++)
+                    for (int row = 0; row < _mRows; row++)
+                        str.AppendFormat("\t\t\tTestUtils.AreEqual({0}.identity.c{1}.{2}, {3});\n", _mTypeName, column,
+                            Components[row], ToTypedLiteral(_mBaseType, column == row ? 1 : 0));
                     EndTest(str);
                 }
             }
@@ -1960,7 +2090,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         private void TestConstructor(StringBuilder str, bool isStatic, bool isScalar)
         {
-            if(m_Columns == 1)
+            if (_mColumns == 1)
             {
                 string name = "constructor";
                 if (isScalar)
@@ -1968,40 +2098,42 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 if (isStatic)
                     name = "static_" + name;
 
-                BeginTest(str, m_TypeName + "_" + name);
-                str.AppendFormat("\t\t\t{0} a = ", m_TypeName);
+                BeginTest(str, _mTypeName + "_" + name);
+                str.AppendFormat("\t\t\t{0} a = ", _mTypeName);
                 if (!isStatic)
                     str.Append("new ");
-                str.Append(m_TypeName);
+                str.Append(_mTypeName);
 
-                if(isScalar)
+                if (isScalar)
                 {
-                    string value = m_BaseType == "bool" ? "true" : m_BaseType == "uint" ? "17u" : m_BaseType == "int" ? "17" : m_BaseType == "float" ? "17.0f" : m_BaseType == "double" ? "17.0" : m_BaseType == "fp" ? "17.0m" : "UNSUPPORTED_TYPE_IN_TEST_CONSTRUCTOR";
+                    string value = _mBaseType == "bool" ? "true" :
+                        _mBaseType == "uint" ? "17u" :
+                        _mBaseType == "int" ? "17" :
+                        _mBaseType == "float" ? "17.0f" :
+                        _mBaseType == "double" ? "17.0" :
+                        _mBaseType == "Fp" ? "17.0m" : "UNSUPPORTED_TYPE_IN_TEST_CONSTRUCTOR";
                     str.Append("(" + value + ");\n");
 
-                    for (int row = 0; row < m_Rows; row++)
+                    for (int row = 0; row < _mRows; row++)
                     {
-                        str.AppendFormat("\t\t\tTestUtils.AreEqual(a.{0}, {1});\n", components[row], value);
+                        str.AppendFormat("\t\t\tTestUtils.AreEqual(a.{0}, {1});\n", Components[row], value);
                     }
                 }
                 else
                 {
-                    string[] values = (from row in Enumerable.Range(0, m_Rows) select m_BaseType == "bool" ? ((row & 1) != 0 ? "true" : "false") : "" + (row + 1)).ToArray();
+                    string[] values = (from row in Enumerable.Range(0, _mRows)
+                        select _mBaseType == "bool" ? ((row & 1) != 0 ? "true" : "false") : "" + (row + 1)).ToArray();
                     AddParenthesized(str, values);
                     str.Append(";\n");
 
-                    for (int row = 0; row < m_Rows; row++)
+                    for (int row = 0; row < _mRows; row++)
                     {
-                        str.AppendFormat("\t\t\tTestUtils.AreEqual(a.{0}, {1});\n", components[row], values[row]);
+                        str.AppendFormat("\t\t\tTestUtils.AreEqual(a.{0}, {1});\n", Components[row], values[row]);
                     }
                 }
-                
+
 
                 EndTest(str);
-            }
-            else
-            {
-
             }
         }
 
@@ -2013,13 +2145,14 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             TestConstructor(str, true, true);
         }
 
-        private void TestOperator(StringBuilder str, bool lhsWide, bool rhsWide, string lhsType, string rhsType, string returnType, string op, string opName, bool isBinary, bool isPrefix)
+        private void TestOperator(StringBuilder str, bool lhsWide, bool rhsWide, string lhsType, string rhsType,
+            string returnType, string op, string opName, bool isBinary, bool isPrefix)
         {
             var rnd = new Random(opName.GetHashCode());
 
-            BeginTest(str, m_TypeName + "_operator_" + opName);
+            BeginTest(str, _mTypeName + "_operator_" + opName);
 
-            int numValues = m_Rows * m_Columns;
+            int numValues = _mRows * _mColumns;
             int numPasses = 4;
 
             string[] lhsValues = new string[lhsWide ? numValues : 1];
@@ -2028,184 +2161,350 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
             for (int pass = 0; pass < numPasses; pass++)
             {
-                bool bool_a = false;
-                bool bool_b = false;
-                int int_a = 0;
-                int int_b = 0;
-                uint uint_a = 0;
-                uint uint_b = 0;
-                float float_a = 0.0f;
-                float float_b = 0.0f;
-                double double_a = 0.0;
-                double double_b = 0.0;
+                bool boolA = false;
+                bool boolB = false;
+                int intA = 0;
+                int intB = 0;
+                uint uintA = 0;
+                uint uintB = 0;
+                float floatA = 0.0f;
+                float floatB = 0.0f;
+                double doubleA = 0.0;
+                double doubleB = 0.0;
 
                 for (int i = 0; i < numValues; i++)
                 {
                     string lhsValue = "";
                     string rhsValue = "";
                     string resultValue = "";
-                        
-                    if (m_BaseType == "bool")
-                    {
-                        if (i == 0 || lhsWide) bool_a = (rnd.Next(2) == 1);
-                        if (i == 0 || rhsWide) bool_b = (rnd.Next(2) == 1);
 
-                        lhsValue = bool_a ? "true" : "false";
-                        rhsValue = bool_b ? "true" : "false";
+                    if (_mBaseType == "bool")
+                    {
+                        if (i == 0 || lhsWide) boolA = (rnd.Next(2) == 1);
+                        if (i == 0 || rhsWide) boolB = (rnd.Next(2) == 1);
+
+                        lhsValue = boolA ? "true" : "false";
+                        rhsValue = boolB ? "true" : "false";
                         switch (op)
                         {
-                            case "==": resultValue = (bool_a == bool_b) ? "true" : "false"; break;
-                            case "!=": resultValue = (bool_a != bool_b) ? "true" : "false"; break;
+                            case "==":
+                                resultValue = (boolA == boolB) ? "true" : "false";
+                                break;
+                            case "!=":
+                                resultValue = (boolA != boolB) ? "true" : "false";
+                                break;
 
-                            case "&": resultValue = (bool_a & bool_b) ? "true" : "false"; break;
-                            case "|": resultValue = (bool_a | bool_b) ? "true" : "false"; break;
-                            case "^": resultValue = (bool_a ^ bool_b) ? "true" : "false"; break;
-                            case "!": resultValue = (!bool_a) ? "true" : "false"; break;
+                            case "&":
+                                resultValue = (boolA & boolB) ? "true" : "false";
+                                break;
+                            case "|":
+                                resultValue = (boolA | boolB) ? "true" : "false";
+                                break;
+                            case "^":
+                                resultValue = (boolA ^ boolB) ? "true" : "false";
+                                break;
+                            case "!":
+                                resultValue = (!boolA) ? "true" : "false";
+                                break;
                         }
                     }
-                    else if (m_BaseType == "int")
+                    else if (_mBaseType == "int")
                     {
-                        if (i == 0 || lhsWide) int_a = rnd.Next();
-                        if (i == 0 || rhsWide) int_b = rnd.Next();
-                            
+                        if (i == 0 || lhsWide) intA = rnd.Next();
+                        if (i == 0 || rhsWide) intB = rnd.Next();
 
-                        lhsValue = "" + int_a;
-                        rhsValue = "" + int_b;
+
+                        lhsValue = "" + intA;
+                        rhsValue = "" + intB;
                         switch (op)
                         {
-                            case "+": resultValue = "" + (isBinary ? (int_a + int_b) : +int_a); break;
-                            case "-": resultValue = "" + (isBinary ? (int_a - int_b) : -int_a); break;
-                            case "*": resultValue = "" + (int_a * int_b); break;
-                            case "/": resultValue = "" + (int_a / int_b); break;
-                            case "%": resultValue = "" + (int_a % int_b); break;
+                            case "+":
+                                resultValue = "" + (isBinary ? (intA + intB) : +intA);
+                                break;
+                            case "-":
+                                resultValue = "" + (isBinary ? (intA - intB) : -intA);
+                                break;
+                            case "*":
+                                resultValue = "" + (intA * intB);
+                                break;
+                            case "/":
+                                resultValue = "" + (intA / intB);
+                                break;
+                            case "%":
+                                resultValue = "" + (intA % intB);
+                                break;
 
-                            case "<": resultValue = (int_a < int_b) ? "true" : "false"; break;
-                            case ">": resultValue = (int_a > int_b) ? "true" : "false"; break;
-                            case "==": resultValue = (int_a == int_b) ? "true" : "false"; break;
-                            case "!=": resultValue = (int_a != int_b) ? "true" : "false"; break;
-                            case "<=": resultValue = (int_a <= int_b) ? "true" : "false"; break;
-                            case ">=": resultValue = (int_a >= int_b) ? "true" : "false"; break;
+                            case "<":
+                                resultValue = (intA < intB) ? "true" : "false";
+                                break;
+                            case ">":
+                                resultValue = (intA > intB) ? "true" : "false";
+                                break;
+                            case "==":
+                                resultValue = (intA == intB) ? "true" : "false";
+                                break;
+                            case "!=":
+                                resultValue = (intA != intB) ? "true" : "false";
+                                break;
+                            case "<=":
+                                resultValue = (intA <= intB) ? "true" : "false";
+                                break;
+                            case ">=":
+                                resultValue = (intA >= intB) ? "true" : "false";
+                                break;
 
-                            case "&": resultValue = "" + (int_a & int_b); break;
-                            case "|": resultValue = "" + (int_a | int_b); break;
-                            case "^": resultValue = "" + (int_a ^ int_b); break;
-                            case "<<": resultValue = "" + (int_a << int_b); break;
-                            case ">>": resultValue = "" + (int_a >> int_b); break;
+                            case "&":
+                                resultValue = "" + (intA & intB);
+                                break;
+                            case "|":
+                                resultValue = "" + (intA | intB);
+                                break;
+                            case "^":
+                                resultValue = "" + (intA ^ intB);
+                                break;
+                            case "<<":
+                                resultValue = "" + (intA << intB);
+                                break;
+                            case ">>":
+                                resultValue = "" + (intA >> intB);
+                                break;
 
-                            case "~": resultValue = "" + (~int_a); break;
-                            case "++": resultValue = "" + (isPrefix ? ++int_a : int_a++); break;
-                            case "--": resultValue = "" + (isPrefix ? --int_a : int_a--); break;
+                            case "~":
+                                resultValue = "" + (~intA);
+                                break;
+                            case "++":
+                                resultValue = "" + (isPrefix ? ++intA : intA++);
+                                break;
+                            case "--":
+                                resultValue = "" + (isPrefix ? --intA : intA--);
+                                break;
                         }
                     }
-                    else if (m_BaseType == "uint")
+                    else if (_mBaseType == "uint")
                     {
-                        if (i == 0 || lhsWide) uint_a = (uint)rnd.Next();
-                        if (i == 0 || rhsWide) uint_b = (uint)rnd.Next();
+                        if (i == 0 || lhsWide) uintA = (uint)rnd.Next();
+                        if (i == 0 || rhsWide) uintB = (uint)rnd.Next();
 
-                        lhsValue = "" + uint_a;
-                        rhsValue = "" + uint_b;
+                        lhsValue = "" + uintA;
+                        rhsValue = "" + uintB;
                         switch (op)
                         {
-                            case "+": resultValue = "" + (isBinary ? (uint_a + uint_b) : +uint_a); break;
-                            case "-": resultValue = "" + (isBinary ? (uint_a - uint_b) : (uint)-uint_a); break;
-                            case "*": resultValue = "" + (uint_a * uint_b); break;
-                            case "/": resultValue = "" + (uint_a / uint_b); break;
-                            case "%": resultValue = "" + (uint_a % uint_b); break;
+                            case "+":
+                                resultValue = "" + (isBinary ? (uintA + uintB) : +uintA);
+                                break;
+                            case "-":
+                                resultValue = "" + (isBinary ? (uintA - uintB) : (uint)-uintA);
+                                break;
+                            case "*":
+                                resultValue = "" + (uintA * uintB);
+                                break;
+                            case "/":
+                                resultValue = "" + (uintA / uintB);
+                                break;
+                            case "%":
+                                resultValue = "" + (uintA % uintB);
+                                break;
 
-                            case "<": resultValue = (uint_a < uint_b) ? "true" : "false"; break;
-                            case ">": resultValue = (uint_a > uint_b) ? "true" : "false"; break;
-                            case "==": resultValue = (uint_a == uint_b) ? "true" : "false"; break;
-                            case "!=": resultValue = (uint_a != uint_b) ? "true" : "false"; break;
-                            case "<=": resultValue = (uint_a <= uint_b) ? "true" : "false"; break;
-                            case ">=": resultValue = (uint_a >= uint_b) ? "true" : "false"; break;
+                            case "<":
+                                resultValue = (uintA < uintB) ? "true" : "false";
+                                break;
+                            case ">":
+                                resultValue = (uintA > uintB) ? "true" : "false";
+                                break;
+                            case "==":
+                                resultValue = (uintA == uintB) ? "true" : "false";
+                                break;
+                            case "!=":
+                                resultValue = (uintA != uintB) ? "true" : "false";
+                                break;
+                            case "<=":
+                                resultValue = (uintA <= uintB) ? "true" : "false";
+                                break;
+                            case ">=":
+                                resultValue = (uintA >= uintB) ? "true" : "false";
+                                break;
 
-                            case "&": resultValue = "" + (uint_a & uint_b); break;
-                            case "|": resultValue = "" + (uint_a | uint_b); break;
-                            case "^": resultValue = "" + (uint_a ^ uint_b); break;
-                            case "<<": resultValue = "" + (uint_a << (int)uint_b); break;
-                            case ">>": resultValue = "" + (uint_a >> (int)uint_b); break;
+                            case "&":
+                                resultValue = "" + (uintA & uintB);
+                                break;
+                            case "|":
+                                resultValue = "" + (uintA | uintB);
+                                break;
+                            case "^":
+                                resultValue = "" + (uintA ^ uintB);
+                                break;
+                            case "<<":
+                                resultValue = "" + (uintA << (int)uintB);
+                                break;
+                            case ">>":
+                                resultValue = "" + (uintA >> (int)uintB);
+                                break;
 
-                            case "~": resultValue = "" + (~uint_a); break;
-                            case "++": resultValue = "" + (isPrefix ? ++uint_a : uint_a++); break;
-                            case "--": resultValue = "" + (isPrefix ? --uint_a : uint_a--); break;
+                            case "~":
+                                resultValue = "" + (~uintA);
+                                break;
+                            case "++":
+                                resultValue = "" + (isPrefix ? ++uintA : uintA++);
+                                break;
+                            case "--":
+                                resultValue = "" + (isPrefix ? --uintA : uintA--);
+                                break;
                         }
                     }
-                    else if (m_BaseType == "float")
+                    else if (_mBaseType == "float")
                     {
-                        if (i == 0 || lhsWide) float_a = (float)rnd.NextDouble() * 1024.0f - 512.0f;
-                        if (i == 0 || rhsWide) float_b = (float)rnd.NextDouble() * 1024.0f - 512.0f;
+                        if (i == 0 || lhsWide) floatA = (float)rnd.NextDouble() * 1024.0f - 512.0f;
+                        if (i == 0 || rhsWide) floatB = (float)rnd.NextDouble() * 1024.0f - 512.0f;
 
-                        lhsValue = "" + float_a.ToString("R") + "f";
-                        rhsValue = "" + float_b.ToString("R") + "f";
+                        lhsValue = "" + floatA.ToString("R") + "f";
+                        rhsValue = "" + floatB.ToString("R") + "f";
                         switch (op)
                         {
-                            case "+": resultValue = "" + (isBinary ? (float_a + float_b) : +float_a).ToString("R") + "f"; break;
-                            case "-": resultValue = "" + (isBinary ? (float_a - float_b) : -float_a).ToString("R") + "f"; break;
-                            case "*": resultValue = "" + (float_a * float_b).ToString("R") + "f"; break;
-                            case "/": resultValue = "" + (float_a / float_b).ToString("R") + "f"; break;
-                            case "%": resultValue = "" + (float_a % float_b).ToString("R") + "f"; break;
+                            case "+":
+                                resultValue = "" + (isBinary ? (floatA + floatB) : +floatA).ToString("R") + "f";
+                                break;
+                            case "-":
+                                resultValue = "" + (isBinary ? (floatA - floatB) : -floatA).ToString("R") + "f";
+                                break;
+                            case "*":
+                                resultValue = "" + (floatA * floatB).ToString("R") + "f";
+                                break;
+                            case "/":
+                                resultValue = "" + (floatA / floatB).ToString("R") + "f";
+                                break;
+                            case "%":
+                                resultValue = "" + (floatA % floatB).ToString("R") + "f";
+                                break;
 
-                            case "<": resultValue = (float_a < float_b) ? "true" : "false"; break;
-                            case ">": resultValue = (float_a > float_b) ? "true" : "false"; break;
-                            case "==": resultValue = (float_a == float_b) ? "true" : "false"; break;
-                            case "!=": resultValue = (float_a != float_b) ? "true" : "false"; break;
-                            case "<=": resultValue = (float_a <= float_b) ? "true" : "false"; break;
-                            case ">=": resultValue = (float_a >= float_b) ? "true" : "false"; break;
+                            case "<":
+                                resultValue = (floatA < floatB) ? "true" : "false";
+                                break;
+                            case ">":
+                                resultValue = (floatA > floatB) ? "true" : "false";
+                                break;
+                            case "==":
+                                resultValue = (floatA == floatB) ? "true" : "false";
+                                break;
+                            case "!=":
+                                resultValue = (floatA != floatB) ? "true" : "false";
+                                break;
+                            case "<=":
+                                resultValue = (floatA <= floatB) ? "true" : "false";
+                                break;
+                            case ">=":
+                                resultValue = (floatA >= floatB) ? "true" : "false";
+                                break;
 
-                            case "++": resultValue = "" + (isPrefix ? ++float_a : float_a++).ToString("R") + "f"; break;
-                            case "--": resultValue = "" + (isPrefix ? --float_a : float_a--).ToString("R") + "f"; break;
+                            case "++":
+                                resultValue = "" + (isPrefix ? ++floatA : floatA++).ToString("R") + "f";
+                                break;
+                            case "--":
+                                resultValue = "" + (isPrefix ? --floatA : floatA--).ToString("R") + "f";
+                                break;
                         }
                     }
-                    else if (m_BaseType == "fp")
+                    else if (_mBaseType == "Fp")
                     {
-                        if (i == 0 || lhsWide) float_a = (float)rnd.NextDouble() * 1024.0f - 512.0f;
-                        if (i == 0 || rhsWide) float_b = (float)rnd.NextDouble() * 1024.0f - 512.0f;
+                        if (i == 0 || lhsWide) floatA = (float)rnd.NextDouble() * 1024.0f - 512.0f;
+                        if (i == 0 || rhsWide) floatB = (float)rnd.NextDouble() * 1024.0f - 512.0f;
 
-                        lhsValue = "" + float_a.ToString("R") + "m";
-                        rhsValue = "" + float_b.ToString("R") + "m";
+                        lhsValue = "" + floatA.ToString("R") + "m";
+                        rhsValue = "" + floatB.ToString("R") + "m";
                         switch (op)
                         {
-                            case "+": resultValue = "" + (isBinary ? (float_a + float_b) : +float_a).ToString("R") + "m"; break;
-                            case "-": resultValue = "" + (isBinary ? (float_a - float_b) : -float_a).ToString("R") + "m"; break;
-                            case "*": resultValue = "" + (float_a * float_b).ToString("R") + "m"; break;
-                            case "/": resultValue = "" + (float_a / float_b).ToString("R") + "m"; break;
-                            case "%": resultValue = "" + (float_a % float_b).ToString("R") + "m"; break;
+                            case "+":
+                                resultValue = "" + (isBinary ? (floatA + floatB) : +floatA).ToString("R") + "m";
+                                break;
+                            case "-":
+                                resultValue = "" + (isBinary ? (floatA - floatB) : -floatA).ToString("R") + "m";
+                                break;
+                            case "*":
+                                resultValue = "" + (floatA * floatB).ToString("R") + "m";
+                                break;
+                            case "/":
+                                resultValue = "" + (floatA / floatB).ToString("R") + "m";
+                                break;
+                            case "%":
+                                resultValue = "" + (floatA % floatB).ToString("R") + "m";
+                                break;
 
-                            case "<": resultValue = (float_a < float_b) ? "true" : "false"; break;
-                            case ">": resultValue = (float_a > float_b) ? "true" : "false"; break;
-                            case "==": resultValue = (float_a == float_b) ? "true" : "false"; break;
-                            case "!=": resultValue = (float_a != float_b) ? "true" : "false"; break;
-                            case "<=": resultValue = (float_a <= float_b) ? "true" : "false"; break;
-                            case ">=": resultValue = (float_a >= float_b) ? "true" : "false"; break;
+                            case "<":
+                                resultValue = (floatA < floatB) ? "true" : "false";
+                                break;
+                            case ">":
+                                resultValue = (floatA > floatB) ? "true" : "false";
+                                break;
+                            case "==":
+                                resultValue = (floatA == floatB) ? "true" : "false";
+                                break;
+                            case "!=":
+                                resultValue = (floatA != floatB) ? "true" : "false";
+                                break;
+                            case "<=":
+                                resultValue = (floatA <= floatB) ? "true" : "false";
+                                break;
+                            case ">=":
+                                resultValue = (floatA >= floatB) ? "true" : "false";
+                                break;
 
-                            case "++": resultValue = "" + (isPrefix ? ++float_a : float_a++).ToString("R") + "m"; break;
-                            case "--": resultValue = "" + (isPrefix ? --float_a : float_a--).ToString("R") + "m"; break;
+                            case "++":
+                                resultValue = "" + (isPrefix ? ++floatA : floatA++).ToString("R") + "m";
+                                break;
+                            case "--":
+                                resultValue = "" + (isPrefix ? --floatA : floatA--).ToString("R") + "m";
+                                break;
                         }
                     }
-                    else if (m_BaseType == "double")
+                    else if (_mBaseType == "double")
                     {
-                        if (i == 0 || lhsWide) double_a = rnd.NextDouble() * 1024.0 - 512.0;
-                        if (i == 0 || rhsWide) double_b = rnd.NextDouble() * 1024.0 - 512.0;
+                        if (i == 0 || lhsWide) doubleA = rnd.NextDouble() * 1024.0 - 512.0;
+                        if (i == 0 || rhsWide) doubleB = rnd.NextDouble() * 1024.0 - 512.0;
 
-                        lhsValue = "" + double_a.ToString("R");
-                        rhsValue = "" + double_b.ToString("R");
+                        lhsValue = "" + doubleA.ToString("R");
+                        rhsValue = "" + doubleB.ToString("R");
                         switch (op)
                         {
-                            case "+": resultValue = "" + (isBinary ? (double_a + double_b) : +double_a).ToString("R"); break;
-                            case "-": resultValue = "" + (isBinary ? (double_a - double_b) : -double_a).ToString("R"); break;
-                            case "*": resultValue = "" + (double_a * double_b).ToString("R"); break;
-                            case "/": resultValue = "" + (double_a / double_b).ToString("R"); break;
-                            case "%": resultValue = "" + (double_a % double_b).ToString("R"); break;
+                            case "+":
+                                resultValue = "" + (isBinary ? (doubleA + doubleB) : +doubleA).ToString("R");
+                                break;
+                            case "-":
+                                resultValue = "" + (isBinary ? (doubleA - doubleB) : -doubleA).ToString("R");
+                                break;
+                            case "*":
+                                resultValue = "" + (doubleA * doubleB).ToString("R");
+                                break;
+                            case "/":
+                                resultValue = "" + (doubleA / doubleB).ToString("R");
+                                break;
+                            case "%":
+                                resultValue = "" + (doubleA % doubleB).ToString("R");
+                                break;
 
-                            case "<": resultValue = (double_a < double_b) ? "true" : "false"; break;
-                            case ">": resultValue = (double_a > double_b) ? "true" : "false"; break;
-                            case "==": resultValue = (double_a == double_b) ? "true" : "false"; break;
-                            case "!=": resultValue = (double_a != double_b) ? "true" : "false"; break;
-                            case "<=": resultValue = (double_a <= double_b) ? "true" : "false"; break;
-                            case ">=": resultValue = (double_a >= double_b) ? "true" : "false"; break;
+                            case "<":
+                                resultValue = (doubleA < doubleB) ? "true" : "false";
+                                break;
+                            case ">":
+                                resultValue = (doubleA > doubleB) ? "true" : "false";
+                                break;
+                            case "==":
+                                resultValue = (doubleA == doubleB) ? "true" : "false";
+                                break;
+                            case "!=":
+                                resultValue = (doubleA != doubleB) ? "true" : "false";
+                                break;
+                            case "<=":
+                                resultValue = (doubleA <= doubleB) ? "true" : "false";
+                                break;
+                            case ">=":
+                                resultValue = (doubleA >= doubleB) ? "true" : "false";
+                                break;
 
-                            case "++": resultValue = "" + (isPrefix ? ++double_a : double_a++).ToString("R"); break;
-                            case "--": resultValue = "" + (isPrefix ? --double_a : double_a--).ToString("R"); break;
+                            case "++":
+                                resultValue = "" + (isPrefix ? ++doubleA : doubleA++).ToString("R");
+                                break;
+                            case "--":
+                                resultValue = "" + (isPrefix ? --doubleA : doubleA--).ToString("R");
+                                break;
                         }
                     }
 
@@ -2213,11 +2512,18 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     if (i == 0 || rhsWide) rhsValues[i] = rhsValue;
                     resultValues[i] = resultValue;
                 }
-                    
+
                 str.AppendFormat("\t\t\t{0} a{1} = ", lhsType, pass);
                 if (lhsWide) str.Append(lhsType);
                 AddParenthesized(str, lhsValues);
                 str.Append(";\n");
+
+                // ** 锁定 wide 测试的精度到 0.1
+                var precision = "";
+                if (_mBaseType == "Fp" && opName.Contains("wide") && opName.Contains("mul"))
+                {
+                    precision = ", Fp.Point1";
+                }
 
                 if (isBinary)
                 {
@@ -2230,7 +2536,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     AddParenthesized(str, resultValues);
                     str.Append(";\n");
 
-                    str.AppendFormat("\t\t\tTestUtils.AreEqual(a{1} {0} b{1}, r{1});\n", op, pass);
+                    str.AppendFormat("\t\t\tTestUtils.AreEqual(a{1} {0} b{1}, r{1}{2});\n", op, pass, precision);
                 }
                 else
                 {
@@ -2239,42 +2545,48 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     str.Append(";\n");
 
                     if (isPrefix)
-                        str.AppendFormat("\t\t\tTestUtils.AreEqual({0}a{1}, r{1});\n", op, pass);
+                    {
+                        str.AppendFormat("\t\t\tTestUtils.AreEqual({0}a{1}, r{1}{2});\n", op, pass, precision);
+                    }
                     else
-                        str.AppendFormat("\t\t\tTestUtils.AreEqual(a{1}{0}, r{1});\n", op, pass);
+                    {
+                        str.AppendFormat("\t\t\tTestUtils.AreEqual(a{1}{0}, r{1}{2});\n", op, pass, precision);
+                    }
                 }
 
                 if (pass != numPasses - 1)
                     str.Append("\n");
-
             }
+
             EndTest(str);
         }
 
         private void TestShuffle(StringBuilder str)
         {
-            if (m_BaseType == "bool")
+            if (_mBaseType == "bool")
                 return;
 
             var rnd = new Random(0);
 
             for (int resultComponents = 1; resultComponents <= 4; resultComponents++)
             {
-                BeginTest(str, m_TypeName + "_shuffle_result_" + resultComponents);
+                BeginTest(str, _mTypeName + "_shuffle_result_" + resultComponents);
 
-                string resultType = ToTypeName(m_BaseType, resultComponents, 1);
-                str.AppendFormat("\t\t\t{0} a = {0}", m_TypeName);
-                var a_data = (from row in Enumerable.Range(0, m_Rows) select m_BaseType == "bool" ? ((row & 1) != 0 ? "true" : "false") : "" + (row)).ToArray();
-                var b_data = (from row in Enumerable.Range(0, m_Rows) select m_BaseType == "bool" ? ((row & 1) != 1 ? "true" : "false") : "" + (row + m_Rows)).ToArray();
+                string resultType = ToTypeName(_mBaseType, resultComponents, 1);
+                str.AppendFormat("\t\t\t{0} a = {0}", _mTypeName);
+                var dataArrA = (from row in Enumerable.Range(0, _mRows)
+                    select _mBaseType == "bool" ? ((row & 1) != 0 ? "true" : "false") : "" + (row)).ToArray();
+                var dataArrB = (from row in Enumerable.Range(0, _mRows)
+                    select _mBaseType == "bool" ? ((row & 1) != 1 ? "true" : "false") : "" + (row + _mRows)).ToArray();
 
-                AddParenthesized(str, a_data);
+                AddParenthesized(str, dataArrA);
                 str.Append(";\n");
-                str.AppendFormat("\t\t\t{0} b = {0}", m_TypeName);
-                AddParenthesized(str, b_data);
+                str.AppendFormat("\t\t\t{0} b = {0}", _mTypeName);
+                AddParenthesized(str, dataArrB);
                 str.Append(";\n\n");
 
 
-                int totalTests = (int)Math.Pow(m_Rows * 2, resultComponents);
+                int totalTests = (int)Math.Pow(_mRows * 2, resultComponents);
                 int targetTests = 16;
                 int numTests = Math.Min(totalTests, targetTests);
 
@@ -2283,30 +2595,32 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
                 for (int testIndex = 0; testIndex < numTests; testIndex++)
                 {
-                    if(numTests == totalTests)
+                    if (numTests == totalTests)
                     {
                         // just enumerate all of them
                         int t = testIndex;
-                        for(int i = 0; i < resultComponents; i++)
+                        for (int i = 0; i < resultComponents; i++)
                         {
-                            shuffleIndices[i] = t % (m_Rows * 2);
-                            t /= m_Rows * 2;
+                            shuffleIndices[i] = t % (_mRows * 2);
+                            t /= _mRows * 2;
                         }
                     }
                     else
                     {
                         // sample randomly
                         for (int i = 0; i < resultComponents; i++)
-                            shuffleIndices[i] = rnd.Next(m_Rows * 2);
+                            shuffleIndices[i] = rnd.Next(_mRows * 2);
                     }
-                    
+
                     str.Append("\t\t\tTestUtils.AreEqual(shuffle(a, b");
-                    for(int i = 0; i < resultComponents; i++)
+                    for (int i = 0; i < resultComponents; i++)
                     {
                         int t = shuffleIndices[i];
-                        shuffleValues[i] = t >= m_Rows ? b_data[t - m_Rows] : a_data[t];
-                        str.AppendFormat(", ShuffleComponent.{0}", shuffleComponents[t >= m_Rows ? (t - m_Rows + 4) : t]);
+                        shuffleValues[i] = t >= _mRows ? dataArrB[t - _mRows] : dataArrA[t];
+                        str.AppendFormat(", ShuffleComponent.{0}",
+                            ShuffleComponents[t >= _mRows ? (t - _mRows + 4) : t]);
                     }
+
                     str.Append("), ");
                     if (resultComponents > 1)
                         str.Append(resultType);
@@ -2322,66 +2636,69 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
         private void TestUnaryOperator(StringBuilder str, string returnType, string op, string opName, bool isPrefix)
         {
-            TestOperator(str, true, false, m_TypeName, m_BaseType, returnType, op, opName, false, isPrefix);
+            TestOperator(str, true, false, _mTypeName, _mBaseType, returnType, op, opName, false, isPrefix);
         }
 
         private void TestBinaryOperator(StringBuilder str, string returnType, string op, string opName)
         {
-            TestOperator(str, true, true, m_TypeName, m_TypeName, returnType, op, opName + "_wide_wide", true, false);
-            TestOperator(str, true, false, m_TypeName, m_BaseType, returnType, op, opName + "_wide_scalar", true, false);
-            TestOperator(str, false, true, m_BaseType, m_TypeName, returnType, op, opName + "_scalar_wide", true, false);
+            TestOperator(str, true, true, _mTypeName, _mTypeName, returnType, op, opName + "_wide_wide", true, false);
+            TestOperator(str, true, false, _mTypeName, _mBaseType, returnType, op, opName + "_wide_scalar", true,
+                false);
+            TestOperator(str, false, true, _mBaseType, _mTypeName, returnType, op, opName + "_scalar_wide", true,
+                false);
         }
 
         private void TestOperators(StringBuilder str)
         {
-            string boolResultType = ToTypeName("bool", m_Rows, m_Columns);
+            string boolResultType = ToTypeName("bool", _mRows, _mColumns);
 
             TestBinaryOperator(str, boolResultType, "==", "equal");
             TestBinaryOperator(str, boolResultType, "!=", "not_equal");
-            
-            if (m_BaseType == "int" || m_BaseType == "uint" || m_BaseType == "float" || m_BaseType == "double")
+
+            if (_mBaseType == "int" || _mBaseType == "uint" || _mBaseType == "float" || _mBaseType == "double" ||
+                _mBaseType == "Fp")
             {
                 TestBinaryOperator(str, boolResultType, "<", "less");
                 TestBinaryOperator(str, boolResultType, ">", "greater");
                 TestBinaryOperator(str, boolResultType, "<=", "less_equal");
                 TestBinaryOperator(str, boolResultType, ">=", "greater_equal");
 
-                TestBinaryOperator(str, m_TypeName, "+", "add");
-                TestBinaryOperator(str, m_TypeName, "-", "sub");
-                TestBinaryOperator(str, m_TypeName, "*", "mul");
-                TestBinaryOperator(str, m_TypeName, "/", "div");
-                TestBinaryOperator(str, m_TypeName, "%", "mod");
+                TestBinaryOperator(str, _mTypeName, "+", "add");
+                TestBinaryOperator(str, _mTypeName, "-", "sub");
+                TestBinaryOperator(str, _mTypeName, "*", "mul");
+                TestBinaryOperator(str, _mTypeName, "/", "div");
+                TestBinaryOperator(str, _mTypeName, "%", "mod");
 
-                TestUnaryOperator(str, m_TypeName, "+", "plus", true);
-                TestUnaryOperator(str, m_TypeName, "-", "neg", true);
+                TestUnaryOperator(str, _mTypeName, "+", "plus", true);
+                TestUnaryOperator(str, _mTypeName, "-", "neg", true);
 
-                TestUnaryOperator(str, m_TypeName, "++", "prefix_inc", true);
-                TestUnaryOperator(str, m_TypeName, "++", "postfix_inc", false);
-                TestUnaryOperator(str, m_TypeName, "--", "prefix_dec", true);
-                TestUnaryOperator(str, m_TypeName, "--", "postfix_dec", false);
+                TestUnaryOperator(str, _mTypeName, "++", "prefix_inc", true);
+                TestUnaryOperator(str, _mTypeName, "++", "postfix_inc", false);
+                TestUnaryOperator(str, _mTypeName, "--", "prefix_dec", true);
+                TestUnaryOperator(str, _mTypeName, "--", "postfix_dec", false);
             }
 
-            if(m_BaseType == "bool" || m_BaseType == "int" || m_BaseType == "uint")
+            if (_mBaseType == "bool" || _mBaseType == "int" || _mBaseType == "uint")
             {
-                TestBinaryOperator(str, m_TypeName, "&", "bitwise_and");
-                TestBinaryOperator(str, m_TypeName, "|", "bitwise_or");
-                TestBinaryOperator(str, m_TypeName, "^", "bitwise_xor");
+                TestBinaryOperator(str, _mTypeName, "&", "bitwise_and");
+                TestBinaryOperator(str, _mTypeName, "|", "bitwise_or");
+                TestBinaryOperator(str, _mTypeName, "^", "bitwise_xor");
             }
 
-            if(m_BaseType == "bool")
+            if (_mBaseType == "bool")
             {
-                TestUnaryOperator(str, m_TypeName, "!", "logical_not", true);
+                TestUnaryOperator(str, _mTypeName, "!", "logical_not", true);
             }
 
-            if(m_BaseType == "int" || m_BaseType == "uint")
+            if (_mBaseType == "int" || _mBaseType == "uint")
             {
-                TestOperator(str, true, false, m_TypeName, "int", m_TypeName, "<<", "left_shift", true, false);
-                TestOperator(str, true, false, m_TypeName, "int", m_TypeName, ">>", "right_shift", true, false);
+                TestOperator(str, true, false, _mTypeName, "int", _mTypeName, "<<", "left_shift", true, false);
+                TestOperator(str, true, false, _mTypeName, "int", _mTypeName, ">>", "right_shift", true, false);
 
-                TestUnaryOperator(str, m_TypeName, "~", "bitwise_not", true);
+                TestUnaryOperator(str, _mTypeName, "~", "bitwise_not", true);
             }
 
-            if(m_Columns == 1)
+            if (_mColumns == 1)
             {
                 TestShuffle(str);
             }
@@ -2391,6 +2708,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
         {
             return Enumerable.Range(0, matrix.GetLength(0)).Select(x => matrix[x, columnNumber]).ToArray();
         }
+
         private string ToLiteral<T>(T value)
         {
             if (typeof(T) == typeof(float))
@@ -2399,77 +2717,77 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                 uint uf = AsUInt(f);
                 if (float.IsPositiveInfinity(f))
                     return "float.PositiveInfinity";
-                else if (float.IsNegativeInfinity(f))
+                if (float.IsNegativeInfinity(f))
                     return "float.NegativeInfinity";
-                else if (f == float.MaxValue)
+                if (f == float.MaxValue)
                     return "float.MaxValue";
-                else if (f == float.MinValue)
+                if (f == float.MinValue)
                     return "float.MinValue";
-                else if (float.IsNaN(f))
+                if (float.IsNaN(f))
                     return uf >= 0x80000000u ? "float.NaN" : "-float.NaN";
-                else if (uf == 0x80000000u)
+                if (uf == 0x80000000u)
                     return "-0.0f";
-                else
-                    return ((float)(object)value).ToString("R") + "f";
+                return ((float)(object)value).ToString("R") + "f";
             }
-            else if (typeof(T) == typeof(double))
+
+            if (typeof(T) == typeof(double))
             {
                 double d = (double)(object)value;
                 ulong ud = AsULong(d);
                 if (double.IsPositiveInfinity(d))
                     return "double.PositiveInfinity";
-                else if (double.IsNegativeInfinity(d))
+                if (double.IsNegativeInfinity(d))
                     return "double.NegativeInfinity";
-                else if (d == double.MaxValue)
+                if (d == double.MaxValue)
                     return "double.MaxValue";
-                else if (d == double.MinValue)
+                if (d == double.MinValue)
                     return "double.MinValue";
-                else if (double.IsNaN(d))
+                if (double.IsNaN(d))
                     return ud >= 0x8000000000000000ul ? "double.NaN" : "-double.NaN";
-                else if (ud == 0x8000000000000000ul)
+                if (ud == 0x8000000000000000ul)
                     return "-0.0";
-                else
-                {
-                    string s = ((double)(object)value).ToString("R");
-                    if (s.IndexOfAny("eE.".ToCharArray()) == -1)
-                        s += ".0";
-                    return s;
-                }
-
+                string s = ((double)(object)value).ToString("R");
+                if (s.IndexOfAny("eE.".ToCharArray()) == -1)
+                    s += ".0";
+                return s;
             }
-            else if (typeof(T) == typeof(decimal))
+
+            if (typeof(T) == typeof(decimal))
             {
                 decimal d = (decimal)(object)value;
 
                 if (d == decimal.MaxValue)
                     return "double.MaxValue";
-                else if (d == decimal.MinValue)
+                if (d == decimal.MinValue)
                     return "double.MinValue";
-                else
-                {
-                    return ((decimal)(object)value).ToString() + "m";
-                }
-
+                return ((decimal)(object)value).ToString(CultureInfo.CurrentCulture) + "m";
             }
-            else if (typeof(T) == typeof(uint))
+
+            if (typeof(T) == typeof(uint))
             {
                 return "" + value + "u";
             }
-            else if(typeof(T) == typeof(long))
+
+            if (typeof(T) == typeof(long))
             {
                 return "" + value + "L";
             }
-            else if(typeof(T) == typeof(ulong))
+
+            if (typeof(T) == typeof(ulong))
             {
                 return "" + value + "UL";
             }
-            else if (typeof(T) == typeof(bool))
+
+            if (typeof(T) == typeof(bool))
             {
                 return (bool)(object)value ? "true" : "false";
             }
+
             return "" + value;
         }
-        private void GenerateComponentWiseParam<I>(StringBuilder str, string typeName, int numComponents, I[] input, int test)
+
+        private void GenerateComponentWiseParam<T>(StringBuilder str, string typeName, int numComponents, T[] input,
+            int test)
         {
             int numTests = input.GetLength(0);
             if (numComponents > 1)
@@ -2477,41 +2795,45 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             for (int i = 0; i < numComponents; i++)
             {
                 int idx = Math.Min(test + i, numTests - 1);
-                I v = input[idx];
+                T v = input[idx];
                 if (i > 0)
                     str.Append(", ");
                 str.Append(ToLiteral(v));
             }
+
             if (numComponents > 1)
                 str.Append(")");
         }
+
         private string GetTypeName(Type t)
         {
             if (t == typeof(float))
                 return "float";
-            else if (t == typeof(double))
+            if (t == typeof(double))
                 return "double";
-            else if (t == typeof(bool))
+            if (t == typeof(bool))
                 return "bool";
-            else if (t == typeof(int))
+            if (t == typeof(int))
                 return "int";
-            else if (t == typeof(uint))
+            if (t == typeof(uint))
                 return "uint";
-            else if (t == typeof(long))
+            if (t == typeof(long))
                 return "long";
-            else if (t == typeof(ulong))
+            if (t == typeof(ulong))
                 return "ulong";
-            else if (t == typeof(decimal))
-                return "fp";
+            if (t == typeof(decimal))
+                return "Fp";
             return "";
         }
-        private void GenerateComponentWiseTest<I, O>(StringBuilder str, string functionName, I[,] input, O[] output, int maxComponents, long maxUps = 0, bool signedZeroEqual = false)
+
+        private void GenerateComponentWiseTest<TIn, TOut>(StringBuilder str, string functionName, TIn[,] input,
+            TOut[] output,
+            int maxComponents, long maxUps = 0, bool signedZeroEqual = false)
         {
             int numTests = input.GetLength(0);
             int numParams = input.GetLength(1);
-            string inputTypeName = GetTypeName(typeof(I));
-            string outputTypeName = GetTypeName(typeof(O));
-            int inputIndex = input.Length;
+            string inputTypeName = GetTypeName(typeof(TIn));
+            string outputTypeName = GetTypeName(typeof(TOut));
             for (int numComponents = 1; numComponents <= maxComponents; numComponents++)
             {
                 BeginTest(str, functionName + "_" + inputTypeName + (numComponents > 1 ? ("" + numComponents) : ""));
@@ -2522,47 +2844,57 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                     {
                         if (param > 0)
                             str.Append(", ");
-                        GenerateComponentWiseParam<I>(str, inputTypeName, numComponents, GetColumn(input, param), test);
+                        GenerateComponentWiseParam(str, inputTypeName, numComponents, GetColumn(input, param), test);
                     }
-                    str.Append("), ");
-                    GenerateComponentWiseParam<O>(str, outputTypeName, numComponents, output, test);
 
-                    if((typeof(O) == typeof(decimal) || typeof(O) == typeof(float) || typeof(O) == typeof(double)) && maxUps > 0)
+                    str.Append("), ");
+                    GenerateComponentWiseParam(str, outputTypeName, numComponents, output, test);
+
+                    if ((typeof(TOut) == typeof(decimal) || typeof(TOut) == typeof(float) ||
+                         typeof(TOut) == typeof(double)) &&
+                        maxUps > 0)
                     {
-                        str.Append(", " + maxUps + (maxUps >= int.MaxValue ? "L" : "" ) + ", " + (signedZeroEqual ? "true" : "false"));
+                        str.Append(", " + maxUps + (maxUps >= int.MaxValue ? "L" : "") + ", " +
+                                   (signedZeroEqual ? "true" : "false"));
                     }
 
                     str.Append(");\n");
                 }
+
                 EndTest(str);
             }
         }
-        private void GenerateComponentWiseTestFloatAndDouble(StringBuilder str, string functionName, double[,] input, double[] output, int floatMaxEps = 0, int doubleMaxEps = 0, bool signedZeroEqual = false)
-        {
-            float[,] inputFloat = new float[input.GetLength(0), input.GetLength(1)];
 
-            for (int i = 0; i < input.GetLength(0); i++)
-                for (int j = 0; j < input.GetLength(1); j++)
-                    inputFloat[i, j] = (float)input[i, j];
-            float[] outputFloat = new float[output.GetLength(0)];
-            for (int i = 0; i < output.GetLength(0); i++)
-                outputFloat[i] = (float)output[i];
-            GenerateComponentWiseTest(str, functionName, inputFloat, outputFloat, 4, floatMaxEps, signedZeroEqual);
-            GenerateComponentWiseTest(str, functionName, input, output, 4, doubleMaxEps, signedZeroEqual);
-        }
+        // private void GenerateComponentWiseTestFloatAndDouble(StringBuilder str, string functionName, double[,] input,
+        //     double[] output, int floatMaxEps = 0, int doubleMaxEps = 0, bool signedZeroEqual = false)
+        // {
+        //     float[,] inputFloat = new float[input.GetLength(0), input.GetLength(1)];
+        //
+        //     for (int i = 0; i < input.GetLength(0); i++)
+        //     for (int j = 0; j < input.GetLength(1); j++)
+        //         inputFloat[i, j] = (float)input[i, j];
+        //     float[] outputFloat = new float[output.GetLength(0)];
+        //     for (int i = 0; i < output.GetLength(0); i++)
+        //         outputFloat[i] = (float)output[i];
+        //     GenerateComponentWiseTest(str, functionName, inputFloat, outputFloat, 4, floatMaxEps, signedZeroEqual);
+        //     GenerateComponentWiseTest(str, functionName, input, output, 4, doubleMaxEps, signedZeroEqual);
+        // }
+
+        [SuppressMessage("ReSharper", "CommentTypo")]
         private void GenerateMathTests(StringBuilder str)
         {
             str.Append("using NUnit.Framework;\n");
-            str.Append("using static Unity.Mathematics.FixedPoint.fpmath;\n");
-            str.Append("using static Unity.Mathematics.math;\n\n");
+            str.Append("using static Unity.Mathematics.FixedPoint.MathFp;\n");
+            // str.Append("using static Unity.Mathematics.math;\n\n");
             str.Append("namespace Unity.Mathematics.FixedPoint.Tests\n");
             str.Append("{\n");
             str.Append("\t[TestFixture]\n");
             str.Append("\tpublic partial class TestMath\n");
             str.Append("\t{\n");
+            str.Append("#if ENABLE_DECIMAL\n");
             /*
             GenerateComponentWiseTest(str, "abs", new int[,] { { 0 }, { -7 }, { 11 }, { -2147483647 }, { -2147483648 } }, new int[] { 0, 7, 11, 2147483647, -2147483648 }, 4);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "abs", new double[,] { { 0.0 }, { -1.1 }, { 2.2 }, { double.NegativeInfinity }, { double.PositiveInfinity } }, new double[] { 0.0, 1.1, 2.2, double.PositiveInfinity, double.PositiveInfinity }, 0, 0, false);
 
             GenerateComponentWiseTest(str, "isfinite", new float[,] { { -float.NaN }, { float.NegativeInfinity }, { float.MinValue }, { -1.0f }, { 0.0f }, { 1.0f }, { float.MaxValue }, { float.PositiveInfinity }, { float.NaN } },
@@ -2577,19 +2909,19 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                                                                    new bool[] { true, false, false, false, false, false, false, false, true }, 4);
             GenerateComponentWiseTest(str, "isnan", new double[,] { { -double.NaN }, { double.NegativeInfinity }, { double.MinValue }, { -1.0 }, { 0.0 }, { 1.0 }, { double.MaxValue }, { double.PositiveInfinity }, { double.NaN } },
                                                                    new bool[] { true, false, false, false, false, false, false, false, true }, 4);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "sin", new double[,] { { -1000000.0 }, { -1.2 }, { 0.0 }, { 1.2 }, { 1000000.0 }, { double.NegativeInfinity }, { double.NaN }, { double.PositiveInfinity } },
                                                                 new double[] { 0.34999350217129295, -0.93203908596722635, 0.0, 0.93203908596722635, -0.34999350217129295, double.NaN, double.NaN, double.NaN }, 1, 32);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "cos", new double[,] { { -1000000.0 }, { -1.2 }, { 0.0 }, { 1.2 }, { 1000000.0 },  { double.NegativeInfinity }, { double.NaN }, { double.PositiveInfinity } },
                                                                 new double[] { 0.93675212753314479,  0.36235775447667358, 1.0, 0.36235775447667358,  0.93675212753314479, double.NaN, double.NaN, double.NaN }, 8, 32);
 
             GenerateComponentWiseTestFloatAndDouble(str, "tan", new double[,] { { -1000000.0 }, { -1.2 }, { 0.0 }, { 1.2 }, { 1000000.0 }, { double.NegativeInfinity }, { double.NaN }, { double.PositiveInfinity } },
                                                                 new double[] { 0.373624453987599, -2.57215162212632, 0.0, 2.57215162212632, -0.373624453987599, double.NaN, double.NaN, double.NaN }, 1, 32);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "atan",new double[,] { { -1000000.0 }, { -1.2 }, { 0.0 }, { 1.2 }, { 1000000.0 }, { double.NegativeInfinity }, { double.NaN }, { double.PositiveInfinity } },
                                                                 new double[] { -1.570795326794897, -0.8760580505981934, 0.0, 0.8760580505981934, 1.570795326794897, -1.570796326794897, double.NaN, 1.570796326794897 }, 1, 32);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "atan2", new double[,] { { 3.1, 2.4 }, { 3.1, -2.4 }, { -3.1, 2.4 }, { -3.1, -2.4 }, { 0.0, 0.0 },
                                                                 { 1.0, double.NegativeInfinity },   { 1.0, double.PositiveInfinity }, { double.NegativeInfinity, 1.0 },   { double.PositiveInfinity, 1.0 },
                                                                 // { double.NegativeInfinity, double.PositiveInfinity }, // TODO: fails with burst
@@ -2642,7 +2974,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
 
             GenerateComponentWiseTestFloatAndDouble(str, "sqrt", new double[,] { { -1.0}, { 0.0 }, { 1e-10 }, { 123.45 }, { double.NegativeInfinity }, { double.NaN }, { double.PositiveInfinity } },
                                                                 new double[] { double.NaN, 0.0, 1e-5, 11.11080555135405, double.NaN, double.NaN, double.PositiveInfinity, }, 1, 1);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "rsqrt", new double[,] { { -1.0 }, { 0.0 }, { 1e10 }, { 123.45 }, { double.NegativeInfinity }, { double.NaN }, { double.PositiveInfinity } },
                                                                 new double[] { double.NaN, double.PositiveInfinity, 1e-5, 0.0900024751020984295, double.NaN, double.NaN, 0.0, }, 1, 1);
 
@@ -2720,7 +3052,7 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                                                                                     { double.NaN, -123.45, 439.43},
                                                                                     },
                                                     new double[] { -123.45, -123.45, 246.3, 439.43, 439.43, 439.43, 439.43, 439.43, 439.43 });
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "saturate", new double[,] { { double.NegativeInfinity }, { -123.45 }, { 0.0 }, { 0.5 }, { 1.0 }, { 123.45 }, { double.PositiveInfinity }, { double.NaN } },
                                                     new double[] { 0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 1.0 });
 
@@ -2857,27 +3189,27 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                                                                                     double.NaN, -76.2, -0.0, 0.0, 76.2, double.NaN, double.NaN,
                                                                                     double.NaN, -323.4, -0.0, 0.0, 323.4, double.NaN, double.NaN,
                                                                                     double.NaN, double.NaN,double.NaN,double.NaN,double.NaN,double.NaN,double.NaN}, 1, 1);
-            
+
             GenerateComponentWiseTestFloatAndDouble(str, "pow", new double[,] {     { double.NegativeInfinity, double.NegativeInfinity }, { -3.4, double.NegativeInfinity }, { -0.0, double.NegativeInfinity}, { 0.0, double.NegativeInfinity}, { 3.4, double.NegativeInfinity}, { double.PositiveInfinity, double.NegativeInfinity}, { double.NaN, double.NegativeInfinity},
-                                                                                    
+
                                                                                     { double.NegativeInfinity, -2.6}, { -3.4, -2.6}, { -0.0, -2.6}, { 0.0, -2.6}, { 3.4, -2.6}, { double.PositiveInfinity, -2.6}, { double.NaN, -2.6},
-                                                                                    
+
                                                                                     { double.NegativeInfinity, -0.0}, { -3.4, -0.0}, { -0.0, -0.0}, { 0.0, -0.0}, { 3.4, -0.0}, { double.PositiveInfinity, -0.0}, // { double.NaN, -0.0}, // TODO: fails with burst
                                                                                     { double.NegativeInfinity, 0.0}, { -3.4, 0.0}, { -0.0, 0.0}, { 0.0, 0.0}, { 3.4, 0.0}, { double.PositiveInfinity, 0.0}, // { double.NaN, 0.0}, // TODO: fails with burst
-                                                                                    
+
                                                                                     { double.NegativeInfinity, 2.6}, { -3.4, 2.6}, { -0.0, 2.6}, { 0.0, 2.6}, { 3.4, 2.6}, { double.PositiveInfinity, 2.6}, { double.NaN, 2.6},
                                                                                     { double.NegativeInfinity, double.PositiveInfinity}, { -3.4, double.PositiveInfinity}, { -0.0, double.PositiveInfinity}, { 0.0, double.PositiveInfinity}, { 3.4, double.PositiveInfinity}, { double.PositiveInfinity, double.PositiveInfinity}, { double.NaN, double.PositiveInfinity},
                                                                                     { double.NegativeInfinity, double.NaN}, { -3.4, double.NaN}, { -0.0, double.NaN}, { 0.0, double.NaN}, { 3.4, double.NaN}, { double.PositiveInfinity, double.NaN}, { double.NaN, double.NaN},
-                                                                                    
+
                                                                                     },
                                                                  new double[]       {
                                                                                       0.0, 0.0, double.PositiveInfinity, double.PositiveInfinity, 0.0, 0.0, double.NaN,
                                                                                       0.0, double.NaN, double.PositiveInfinity, double.PositiveInfinity, 0.041510199028461224, 0.0, double.NaN,
                                                                                       1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // double.NaN, // TODO: fails with burst
                                                                                       1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // double.NaN, // TODO: fails with burst
-                                                                                      
+
                                                                                       double.PositiveInfinity, double.NaN, 0.0, 0.0, 24.090465076169736, double.PositiveInfinity, double.NaN,
-                                                                                      
+
                                                                                       double.PositiveInfinity, double.PositiveInfinity, 0.0, 0.0, double.PositiveInfinity, double.PositiveInfinity, double.NaN,
                                                                                       double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN,
                                                                                     }, 1, 1);
@@ -2898,34 +3230,43 @@ namespace Unity.Mathematics.Mathematics.CodeGen
                                                        new ulong[] { 0UL, 1UL, 2UL, 4UL, 1073741824UL, 2147483648UL, 2147483648UL, 4294967296UL, 4294967296UL, 9223372036854775808UL, 0L }, 1);
             */
             GenerateFpComponentWiseTests(str);
-
+            // GenerateFpNotImplementedCases(str);
+            str.Append("#endif\n");
             str.Append("\n\t}");
             str.Append("\n}\n");
         }
 
         private void GenerateTypeTests(StringBuilder str)
         {
-            StringBuilder mathStr = new StringBuilder();
-            
             str.Append("using NUnit.Framework;\n");
-            str.Append("using static Unity.Mathematics.FixedPoint.fpmath;\n");
-            str.Append("using static Unity.Mathematics.math;\n\n");
+            str.Append("using static Unity.Mathematics.FixedPoint.MathFp;\n");
+            // str.Append("using static Unity.Mathematics.math;\n\n");
             str.Append("namespace Unity.Mathematics.FixedPoint.Tests\n");
             str.Append("{\n");
             str.Append("\t[TestFixture]\n");
-            str.AppendFormat("\tpublic class Test{0}\n", UpperCaseFirstLetter(m_TypeName));
+            str.AppendFormat("\tpublic class Test{0}\n", UpperCaseFirstLetter(_mTypeName));
             str.Append("\t{\n");
+            // ** 屏蔽所有 decimal 相关的测试，因为 burst 不支持这个类型
+            if (_mBaseType == "Fp")
+            {
+                str.Append($"#if ENABLE_DECIMAL\n");
+            }
 
             TestStaticFields(str);
             TestConstructors(str);
             TestOperators(str);
 
+            if (_mBaseType == "Fp")
+            {
+                str.Append($"#endif\n");
+            }
             str.Append("\n\t}");
             str.Append("\n}\n");
         }
 
 
-        private void GenerateComponentWiseTestFp(StringBuilder str, string functionName, decimal[,] input, decimal[] output, long fpMaxEps = 0, bool signedZeroEqual = false)
+        private void GenerateComponentWiseTestFp(StringBuilder str, string functionName, decimal[,] input,
+            decimal[] output, long fpMaxEps = 0, bool signedZeroEqual = false)
         {
             if (input.GetLength(0) != output.GetLength(0))
                 throw new Exception("Bad length for GenerateComponentWiseTestFp: " + functionName);
@@ -2942,171 +3283,248 @@ namespace Unity.Mathematics.Mathematics.CodeGen
             long lowLowPrecision = 35359738368L;
             long veryLowPrecision = 37200899080192L;
 
-            GenerateComponentWiseTestFp(str, "abs", new decimal[,] { { 0.0m }, { -1.1m }, { 2.2m } }, new decimal[] { 0.0m, 1.1m, 2.2m }, 0, false);
+            GenerateComponentWiseTestFp(str, "abs", new[,] { { 0.0m }, { -1.1m }, { 2.2m } },
+                new[] { 0.0m, 1.1m, 2.2m });
 
-            GenerateComponentWiseTestFp(str, "sin", new decimal[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
-                                                                new decimal[] { 0.34999350217129295m, -0.93203908596722635m, 0.0m, 0.93203908596722635m, -0.34999350217129295m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "sin",
+                new[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
+                new[]
+                    { 0.34999350217129295m, -0.93203908596722635m, 0.0m, 0.93203908596722635m, -0.34999350217129295m },
+                lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "cos", new decimal[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
-                                                                new decimal[] { 0.93675212753314479m, 0.36235775447667358m, 1.0m, 0.36235775447667358m, 0.93675212753314479m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "cos",
+                new[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
+                new[]
+                    { 0.93675212753314479m, 0.36235775447667358m, 1.0m, 0.36235775447667358m, 0.93675212753314479m },
+                lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "tan", new decimal[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
-                                                                new decimal[] { 0.373624453987599m, -2.57215162212632m, 0.0m, 2.57215162212632m, -0.373624453987599m}, veryLowPrecision);
+            GenerateComponentWiseTestFp(str, "tan",
+                new[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
+                new[] { 0.373624453987599m, -2.57215162212632m, 0.0m, 2.57215162212632m, -0.373624453987599m },
+                veryLowPrecision);
 
-            GenerateComponentWiseTestFp(str, "atan", new decimal[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
-                                                                new decimal[] { -1.570795326794897m, -0.8760580505981934m, 0.0m, 0.8760580505981934m, 1.570795326794897m }, veryLowPrecision);
+            GenerateComponentWiseTestFp(str, "atan",
+                new[,] { { -1000000.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 1000000.0m } },
+                new[]
+                    { -1.570795326794897m, -0.8760580505981934m, 0.0m, 0.8760580505981934m, 1.570795326794897m },
+                veryLowPrecision);
 
-            GenerateComponentWiseTestFp(str, "atan2", new decimal[,] { { 3.1m, 2.4m }, { 3.1m, -2.4m }, { -3.1m, 2.4m }, { -3.1m, -2.4m }, { 0.0m, 0.0m } },
-                                                                new decimal[] { 0.91199029067742038m, 2.2296023629123729m, -0.91199029067742038m, -2.2296023629123729m, 0.0m
-                                                                }, veryLowPrecision);
-
-
-            GenerateComponentWiseTestFp(str, "log", new decimal[,] { { 1.2e-9m }, { 1.0m }, { 1.2e9m } },
-                                                                new decimal[] { (decimal)Math.Log(1.2e-9), (decimal)Math.Log(1.0), (decimal)Math.Log(1.2e9), }, veryLowPrecision);
-
-            GenerateComponentWiseTestFp(str, "log2", new decimal[,] { { 1.2e-9m }, { 1.0m }, { 1.2e9m } },
-                                                                new decimal[] { (decimal)Math.Log(1.2e-9, 2), (decimal)Math.Log(1.0, 2), (decimal)Math.Log(1.2e9, 2), }, veryLowPrecision);
-
-            GenerateComponentWiseTestFp(str, "radians", new decimal[,] { { -123.45m }, { 0.0m }, { 123.45m } },
-                                                                new decimal[] { -2.15460896158699986m, 0.0m, 2.15460896158699986m }, lowPrecision);
-
-            GenerateComponentWiseTestFp(str, "degrees", new decimal[,] { { -123.45m }, { 0.0m }, { 123.45m } },
-                                                                new decimal[] { -7073.1639808900125122m, 0.0m, 7073.1639808900125122m }, mediumPrecision);
-
-            GenerateComponentWiseTestFp(str, "sign", new decimal[,] { { -123.45m }, { -1e-9m }, { 0.0m }, { 1e-9m }, { 123.45m } },
-                                                                new decimal[] { -1.0m, -1.0m, 0.0m, 1.0m, 1.0m });
-
-            GenerateComponentWiseTestFp(str, "sqrt", new decimal[,] { { 0.0m }, { 1e-3m }, { 123.45m } },
-                                                                new decimal[] { 0.0m, (decimal)(Math.Sqrt(1e-3)), 11.11080555135405m }, lowPrecision);
-
-            GenerateComponentWiseTestFp(str, "rsqrt", new decimal[,] { { 1e9m }, { 123.45m } },
-                                                                new decimal[] { (decimal)(1.0 / Math.Sqrt(1e9)), 0.0900024751020984295m }, lowLowPrecision);
-
-            GenerateComponentWiseTestFp(str, "rcp", new decimal[,] { { -123.45m }, { 123.45m } },
-                                                                new decimal[] { -0.0081004455245038477m, 0.0081004455245038477m }, lowPrecision);
-
-            GenerateComponentWiseTestFp(str, "floor", new decimal[,] { { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m } },
-                                                                new decimal[] { -101.0m, -101.0m, -101.0m, 0.0m, 100.0m, 100.0m, 100.0m });
-
-            GenerateComponentWiseTestFp(str, "ceil", new decimal[,] { { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m }},
-                                                                new decimal[] { -100.0m, -100.0m, -100.0m, 0.0m, 101.0m, 101.0m, 101.0m});
-
-            GenerateComponentWiseTestFp(str, "round", new decimal[,] { { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m }, { 101.50m } },
-                                                                new decimal[] { -101.0m, -100.0m, -100.0m, 0.0m, 100.0m, 100.0m, 101.0m, 102.0m });
-
-            GenerateComponentWiseTestFp(str, "trunc", new decimal[,] { { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m }, { 101.50m } },
-                                                                new decimal[] { -100.0m, -100.0m, -100.0m, 0.0m, 100.0m, 100.0m, 100.0m, 101.0m });
-
-            GenerateComponentWiseTestFp(str, "frac", new decimal[,] { { -1e9m }, { -100.3m }, { 0.0m }, { 100.8m } },
-                                                                new decimal[] {  0.0m, 0.7m, 0.0m, 0.8m }, lowPrecision);
-
-            GenerateComponentWiseTestFp(str, "lerp", new decimal[,] { { -123.45m, 439.43m, -1.5m }, { -123.45m, 439.43m, 0.5m }, { -123.45m, 439.43m, 5.5m }},
-                                                                new decimal[] { -967.77m, 157.99m, 2972.39m }, highPrecision);
-
-            GenerateComponentWiseTestFp(str, "unlerp", new decimal[,] {  { -123.45m, 439.43m, -254.3m}, { -123.45m, 439.43m, 0.0m }, { -123.45m, 439.43m, 632.1m },
-                                                                                    { 439.43m, -123.45m, -254.3m}, { 439.43m, -123.45m, 0.0m }, { 439.43m, -123.45m, 632.1m } },
-                                                                new decimal[] { -0.23246517907902217m, 0.21931850483229107m, 1.3422932063672541m,
-                                                                                1.2324651790790221m, 0.78068149516770893m, -0.34229320636725412m}, lowPrecision);
-
-            GenerateComponentWiseTestFp(str, "remap", new decimal[,] { { -123.45m, 439.43m, 541.3m, 631.5m, -200.0m }, { -123.45m, 439.43m, 541.3m, 631.5m, -100.0m }, { -123.45m, 439.43m, 541.3m, 631.5m, 500.0m },
-                                                                                  { 439.43m, -123.45m, 541.3m, 631.5m, -200.0m }, { 439.43m, -123.45m, 541.3m, 631.5m, -100.0m }, { 439.43m, -123.45m, 541.3m, 631.5m, 500.0m },
-                                                                                  { -123.45m, 439.43m, 631.5m, 541.3m, -200.0m }, { -123.45m, 439.43m, 631.5m, 541.3m,-100.0m }, { -123.45m,  439.43m, 631.5m, 541.3m, 500.0m },
-                                                                                   },
-                                                                new decimal[] {  529.03306921546333m, 545.05779917566799m, 641.20617893689596m,
-                                                                                643.76693078453667m, 627.74220082433201m, 531.59382106310404m,
-                                                                                643.76693078453667m, 627.74220082433201m, 531.59382106310404m,
-                                                                }, mediumLowPrecision);
-
-            GenerateComponentWiseTestFp(str, "clamp", new decimal[,] {              { -254.3m, -123.45m, 439.43m}, { 246.3m, -123.45m, 439.43m }, { 632.1m, -123.45m, 439.43m },
-                                                                                    { -254.3m,  439.43m,-123.45m}, { 246.3m,  439.43m,-123.45m }, { 632.1m,  439.43m,-123.45m }
-                                                                                    },
-                                                    new decimal[] { -123.45m, 246.3m, 439.43m, 439.43m, 439.43m, 439.43m});
-
-            GenerateComponentWiseTestFp(str, "saturate", new decimal[,] { { -123.45m }, { 0.0m }, { 0.5m }, { 1.0m } },
-                                                    new decimal[] { 0.0m, 0.0m, 0.5m, 1.0m});
-
-            GenerateComponentWiseTestFp(str, "step", new decimal[,] {
-                { -123.45m, -200.0m }, { -123.45m, 200.0m },
-                { 123.45m, -200.0m }, { 123.45m, 200.0m }
-            },
-                                                                 new decimal[] {  0.0m, 1.0m,
-                                                                                  0.0m, 1.0m, 
-                                                                 });
+            GenerateComponentWiseTestFp(str, "atan2",
+                new[,] { { 3.1m, 2.4m }, { 3.1m, -2.4m }, { -3.1m, 2.4m }, { -3.1m, -2.4m }, { 0.0m, 0.0m } },
+                new[]
+                {
+                    0.91199029067742038m, 2.2296023629123729m, -0.91199029067742038m, -2.2296023629123729m, 0.0m
+                }, veryLowPrecision);
 
 
-            GenerateComponentWiseTestFp(str, "min", new decimal[,] { 
-                                                                                { -1234.56m, -3456.7m }, { -3456.7m, -1234.56m }, { -1234.56m, 3456.7m }, { 3456.7m, -1234.56m }, { 1234.56m, 3456.7m }, { 3456.7m, 1234.56m }, },
-                                                                new decimal[] { 
-                                                                                -3456.7m, -3456.7m, -1234.56m, -1234.56m, 1234.56m, 1234.56m,
-                                                                                });
+            GenerateComponentWiseTestFp(str, "log", new[,] { { 1.2e-9m }, { 1.0m }, { 1.2e9m } },
+                new[] { (decimal)Math.Log(1.2e-9), (decimal)Math.Log(1.0), (decimal)Math.Log(1.2e9), },
+                veryLowPrecision);
 
-            GenerateComponentWiseTestFp(str, "max", new decimal[,] { 
-                                                                                { -1234.56m, -3456.7m }, { -3456.7m, -1234.56m }, { -1234.56m, 3456.7m }, { 3456.7m, -1234.56m }, { 1234.56m, 3456.7m }, { 3456.7m, 1234.56m }
-                                                                                },
-                                                                new decimal[] { 
-                                                                                -1234.56m, -1234.56m, 3456.7m, 3456.7m, 3456.7m, 3456.7m,
-                                                                                });
+            GenerateComponentWiseTestFp(str, "log2", new[,] { { 1.2e-9m }, { 1.0m }, { 1.2e9m } },
+                new[] { (decimal)Math.Log(1.2e-9, 2), (decimal)Math.Log(1.0, 2), (decimal)Math.Log(1.2e9, 2), },
+                veryLowPrecision);
+
+            GenerateComponentWiseTestFp(str, "radians", new[,] { { -123.45m }, { 0.0m }, { 123.45m } },
+                new[] { -2.15460896158699986m, 0.0m, 2.15460896158699986m }, lowPrecision);
+
+            GenerateComponentWiseTestFp(str, "degrees", new[,] { { -123.45m }, { 0.0m }, { 123.45m } },
+                new[] { -7073.1639808900125122m, 0.0m, 7073.1639808900125122m }, mediumPrecision);
+
+            GenerateComponentWiseTestFp(str, "sign",
+                new[,] { { -123.45m }, { -1e-9m }, { 0.0m }, { 1e-9m }, { 123.45m } },
+                new[] { -1.0m, -1.0m, 0.0m, 1.0m, 1.0m });
+
+            GenerateComponentWiseTestFp(str, "sqrt", new[,] { { 0.0m }, { 1e-3m }, { 123.45m } },
+                new[] { 0.0m, (decimal)(Math.Sqrt(1e-3)), 11.11080555135405m }, lowPrecision);
+
+            GenerateComponentWiseTestFp(str, "rsqrt", new[,] { { 1e9m }, { 123.45m } },
+                new[] { (decimal)(1.0 / Math.Sqrt(1e9)), 0.0900024751020984295m }, lowLowPrecision);
+
+            GenerateComponentWiseTestFp(str, "rcp", new[,] { { -123.45m }, { 123.45m } },
+                new[] { -0.0081004455245038477m, 0.0081004455245038477m }, lowPrecision);
+
+            GenerateComponentWiseTestFp(str, "floor",
+                new[,]
+                    { { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m } },
+                new[] { -101.0m, -101.0m, -101.0m, 0.0m, 100.0m, 100.0m, 100.0m });
+
+            GenerateComponentWiseTestFp(str, "ceil",
+                new[,]
+                    { { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m } },
+                new[] { -100.0m, -100.0m, -100.0m, 0.0m, 101.0m, 101.0m, 101.0m });
+
+            GenerateComponentWiseTestFp(str, "round",
+                new[,]
+                {
+                    { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m },
+                    { 101.50m }
+                },
+                new[] { -101.0m, -100.0m, -100.0m, 0.0m, 100.0m, 100.0m, 101.0m, 102.0m });
+
+            GenerateComponentWiseTestFp(str, "trunc",
+                new[,]
+                {
+                    { -100.51m }, { -100.5m }, { -100.49m }, { 0.0m }, { 100.49m }, { 100.50m }, { 100.51m },
+                    { 101.50m }
+                },
+                new[] { -100.0m, -100.0m, -100.0m, 0.0m, 100.0m, 100.0m, 100.0m, 101.0m });
+
+            GenerateComponentWiseTestFp(str, "frac", new[,] { { -1e9m }, { -100.3m }, { 0.0m }, { 100.8m } },
+                new[] { 0.0m, 0.7m, 0.0m, 0.8m }, lowPrecision);
+
+            GenerateComponentWiseTestFp(str, "lerp",
+                new[,]
+                    { { -123.45m, 439.43m, -1.5m }, { -123.45m, 439.43m, 0.5m }, { -123.45m, 439.43m, 5.5m } },
+                new[] { -967.77m, 157.99m, 2972.39m }, highPrecision);
+
+            GenerateComponentWiseTestFp(str, "unlerp", new[,]
+                {
+                    { -123.45m, 439.43m, -254.3m }, { -123.45m, 439.43m, 0.0m }, { -123.45m, 439.43m, 632.1m },
+                    { 439.43m, -123.45m, -254.3m }, { 439.43m, -123.45m, 0.0m }, { 439.43m, -123.45m, 632.1m }
+                },
+                new[]
+                {
+                    -0.23246517907902217m, 0.21931850483229107m, 1.3422932063672541m,
+                    1.2324651790790221m, 0.78068149516770893m, -0.34229320636725412m
+                }, lowPrecision);
+
+            GenerateComponentWiseTestFp(str, "remap", new[,]
+                {
+                    { -123.45m, 439.43m, 541.3m, 631.5m, -200.0m }, { -123.45m, 439.43m, 541.3m, 631.5m, -100.0m },
+                    { -123.45m, 439.43m, 541.3m, 631.5m, 500.0m },
+                    { 439.43m, -123.45m, 541.3m, 631.5m, -200.0m }, { 439.43m, -123.45m, 541.3m, 631.5m, -100.0m },
+                    { 439.43m, -123.45m, 541.3m, 631.5m, 500.0m },
+                    { -123.45m, 439.43m, 631.5m, 541.3m, -200.0m }, { -123.45m, 439.43m, 631.5m, 541.3m, -100.0m },
+                    { -123.45m, 439.43m, 631.5m, 541.3m, 500.0m },
+                },
+                new[]
+                {
+                    529.03306921546333m, 545.05779917566799m, 641.20617893689596m,
+                    643.76693078453667m, 627.74220082433201m, 531.59382106310404m,
+                    643.76693078453667m, 627.74220082433201m, 531.59382106310404m,
+                }, mediumLowPrecision);
+
+            GenerateComponentWiseTestFp(str, "clamp", new[,]
+                {
+                    { -254.3m, -123.45m, 439.43m }, { 246.3m, -123.45m, 439.43m }, { 632.1m, -123.45m, 439.43m },
+                    { -254.3m, 439.43m, -123.45m }, { 246.3m, 439.43m, -123.45m }, { 632.1m, 439.43m, -123.45m }
+                },
+                new[] { -123.45m, 246.3m, 439.43m, 439.43m, 439.43m, 439.43m });
+
+            GenerateComponentWiseTestFp(str, "saturate", new[,] { { -123.45m }, { 0.0m }, { 0.5m }, { 1.0m } },
+                new[] { 0.0m, 0.0m, 0.5m, 1.0m });
+
+            GenerateComponentWiseTestFp(str, "step", new[,]
+                {
+                    { -123.45m, -200.0m }, { -123.45m, 200.0m },
+                    { 123.45m, -200.0m }, { 123.45m, 200.0m }
+                },
+                new[]
+                {
+                    0.0m, 1.0m,
+                    0.0m, 1.0m,
+                });
 
 
-            GenerateComponentWiseTestFp(str, "smoothstep", new decimal[,] { { -123.45m, 345.6m, -200.0m}, { -123.45m, 345.6m, -100.0m}, { -123.45m, 345.6m, 400.0m},
-                                                                                         { 345.6m, -123.45m, -200.0m}, { 345.6m, -123.45m, -100.0m}, { 345.6m, -123.45m, 400.0m} },
-                                                                       new decimal[] {  0.0m, 0.0072484810488798993m, 1.0m,
-                                                                                      1.0m, 0.9927515189511201007m, 0.0m}, lowLowPrecision);
+            GenerateComponentWiseTestFp(str, "min", new[,]
+                {
+                    { -1234.56m, -3456.7m }, { -3456.7m, -1234.56m }, { -1234.56m, 3456.7m }, { 3456.7m, -1234.56m },
+                    { 1234.56m, 3456.7m }, { 3456.7m, 1234.56m },
+                },
+                new[]
+                {
+                    -3456.7m, -3456.7m, -1234.56m, -1234.56m, 1234.56m, 1234.56m,
+                });
 
-            GenerateComponentWiseTestFp(str, "mad", new decimal[,] { { -123.45m, 345.6m, 4.321m } },
-                                                                        new decimal[] { -42659.999m}, mediumPrecision);
+            GenerateComponentWiseTestFp(str, "max", new[,]
+                {
+                    { -1234.56m, -3456.7m }, { -3456.7m, -1234.56m }, { -1234.56m, 3456.7m }, { 3456.7m, -1234.56m },
+                    { 1234.56m, 3456.7m }, { 3456.7m, 1234.56m }
+                },
+                new[]
+                {
+                    -1234.56m, -1234.56m, 3456.7m, 3456.7m, 3456.7m, 3456.7m,
+                });
 
 
-            GenerateComponentWiseTestFp(str, "fmod", new decimal[,] {    
-                                                                                    { -323.4m, -123.6m}, { -0.0m, -123.6m}, { 0.0m, -123.6m}, { 323.4m, -123.6m},
-                                                                                    { -323.4m, 123.6m}, { -0.0m, 123.6m}, { 0.0m, 123.6m}, { 323.4m, 123.6m}
-                                                                                    },
-                                                                 new decimal[] {     
-                                                                                   -76.2m, -0.0m, 0.0m, 76.2m,
-                                                                                    -76.2m, -0.0m, 0.0m, 76.2m
-                                                                 }, mediumPrecision);
+            GenerateComponentWiseTestFp(str, "smoothStep", new[,]
+                {
+                    { -123.45m, 345.6m, -200.0m }, { -123.45m, 345.6m, -100.0m }, { -123.45m, 345.6m, 400.0m },
+                    { 345.6m, -123.45m, -200.0m }, { 345.6m, -123.45m, -100.0m }, { 345.6m, -123.45m, 400.0m }
+                },
+                new[]
+                {
+                    0.0m, 0.0072484810488798993m, 1.0m,
+                    1.0m, 0.9927515189511201007m, 0.0m
+                }, lowLowPrecision);
 
-            GenerateComponentWiseTestFp(str, "pow", new decimal[,] { 
-                                                                                    { 3.4m, -2.6m},
-                                                                                    { -3.4m, -0.0m}, { -0.0m, -0.0m}, { 0.0m, -0.0m}, { 3.4m, -0.0m},
-                                                                                    { -3.4m, 0.0m}, { -0.0m, 0.0m}, { 0.0m, 0.0m}, { 3.4m, 0.0m},
-                                                                                    { -0.0m, 2.6m}, { 0.0m, 2.6m}, { 3.4m, 2.6m}
-                                                                   },
-                                                                 new decimal[]      {
-                                                                                        0.041510199028461224m, 
-                                                                                        1.0m, 1.0m, 1.0m, 1.0m, 
-                                                                                        1.0m, 1.0m, 1.0m, 1.0m,
-                                                                                        0.0m, 0.0m, 24.090465076169736m
-                                                                                    }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "mad", new[,] { { -123.45m, 345.6m, 4.321m } },
+                new[] { -42659.999m }, mediumPrecision);
 
+
+            GenerateComponentWiseTestFp(str, "fmod", new[,]
+                {
+                    { -323.4m, -123.6m }, { -0.0m, -123.6m }, { 0.0m, -123.6m }, { 323.4m, -123.6m },
+                    { -323.4m, 123.6m }, { -0.0m, 123.6m }, { 0.0m, 123.6m }, { 323.4m, 123.6m }
+                },
+                new[]
+                {
+                    -76.2m, -0.0m, 0.0m, 76.2m,
+                    -76.2m, -0.0m, 0.0m, 76.2m
+                }, mediumPrecision);
+
+            GenerateComponentWiseTestFp(str, "pow", new[,]
+                {
+                    { 3.4m, -2.6m },
+                    { -3.4m, -0.0m }, { -0.0m, -0.0m }, { 0.0m, -0.0m }, { 3.4m, -0.0m },
+                    { -3.4m, 0.0m }, { -0.0m, 0.0m }, { 0.0m, 0.0m }, { 3.4m, 0.0m },
+                    { -0.0m, 2.6m }, { 0.0m, 2.6m }, { 3.4m, 2.6m }
+                },
+                new[]
+                {
+                    0.041510199028461224m,
+                    1.0m, 1.0m, 1.0m, 1.0m,
+                    1.0m, 1.0m, 1.0m, 1.0m,
+                    0.0m, 0.0m, 24.090465076169736m
+                }, lowPrecision);
         }
 
         void GenerateFpNotImplementedCases(StringBuilder str)
         {
             int lowPrecision = 200000000;
 
-            GenerateComponentWiseTestFp(str, "sinh", new decimal[,] { { -2.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 2.0m } },
-                                                                new decimal[] { -3.626860407847018m, -1.509461355412173m, 0.0m, 1.509461355412173m, 3.626860407847018m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "sinh",
+                new[,] { { -2.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 2.0m } },
+                new[]
+                    { -3.626860407847018m, -1.509461355412173m, 0.0m, 1.509461355412173m, 3.626860407847018m },
+                lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "cosh", new decimal[,] { { -2.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 2.0m } },
-                                                                new decimal[] { 3.7621956910836314m, 1.81065556732437m, 1.0m, 1.81065556732437m, 3.7621956910836314m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "cosh",
+                new[,] { { -2.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 2.0m } },
+                new[] { 3.7621956910836314m, 1.81065556732437m, 1.0m, 1.81065556732437m, 3.7621956910836314m },
+                lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "tanh", new decimal[,] { { -2.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 2.0m } },
-                                                                new decimal[] { -0.96402758007581688m, -0.83365460701215526m, 0.0m, 0.83365460701215526m, 0.96402758007581688m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "tanh",
+                new[,] { { -2.0m }, { -1.2m }, { 0.0m }, { 1.2m }, { 2.0m } },
+                new[]
+                    { -0.96402758007581688m, -0.83365460701215526m, 0.0m, 0.83365460701215526m, 0.96402758007581688m },
+                lowPrecision);
 
 
-            GenerateComponentWiseTestFp(str, "exp", new decimal[,] { { -10.0m }, { -1.2m }, { 0.0m }, { 1.2m } },
-                                                                new decimal[] { 0.00004539992976248485m, 0.3011942119122021m, 1.0m, 3.3201169227365475m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "exp", new[,] { { -10.0m }, { -1.2m }, { 0.0m }, { 1.2m } },
+                new[]
+                    { 0.00004539992976248485m, 0.3011942119122021m, 1.0m, 3.3201169227365475m }, lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "exp2", new decimal[,] { { -10.0m }, { -1.2m }, { 0.0m }, { 1.2m } },
-                                                                new decimal[] { 0.0009765625m, 0.435275281648062m, 1.0m, 2.297396709994070m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "exp2", new[,] { { -10.0m }, { -1.2m }, { 0.0m }, { 1.2m } },
+                new[] { 0.0009765625m, 0.435275281648062m, 1.0m, 2.297396709994070m }, lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "exp10", new decimal[,] { { -10.0m }, { -1.2m }, { 0.0m }, { 1.2m } },
-                                                                new decimal[] { 1e-10m, 0.063095734448019325m, 1.0m, 15.8489319246111348520210m }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "exp10", new[,] { { -10.0m }, { -1.2m }, { 0.0m }, { 1.2m } },
+                new[] { 1e-10m, 0.063095734448019325m, 1.0m, 15.8489319246111348520210m }, lowPrecision);
 
-            GenerateComponentWiseTestFp(str, "log10", new decimal[,] { { 1.2e-9m }, { 1.0m }, { 1.2e9m } },
-                                                                new decimal[] { (decimal)Math.Log10(1.2e-9), (decimal)Math.Log10(1.0), (decimal)Math.Log10(1.2e9), }, lowPrecision);
+            GenerateComponentWiseTestFp(str, "log10", new[,] { { 1.2e-9m }, { 1.0m }, { 1.2e9m } },
+                new[] { (decimal)Math.Log10(1.2e-9), (decimal)Math.Log10(1.0), (decimal)Math.Log10(1.2e9), },
+                lowPrecision);
         }
-
     }
 }
